@@ -1,0 +1,36 @@
+{
+  "name": "cql-exec-vsac",
+  "version": "1.0.0",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:cqframework/cql-exec-vsac.git"
+  },
+  "main": "index.js",
+  "scripts": {
+    "test": "./node_modules/.bin/mocha --reporter spec --recursive",
+    "test:watch": "npm test -- --watch",
+    "test:debug": "./node_modules/.bin/mocha --inspect --debug-brk --reporter spec --recursive",
+    "lint": "./node_modules/.bin/eslint .",
+    "lint:fix": "./node_modules/.bin/eslint . --fix"
+  },
+  "dependencies": {
+    "debug": "^2.6.4",
+    "mkdirp": "^0.5.1",
+    "request": "^2.81.0",
+    "request-promise-native": "^1.0.3",
+    "xml2js": "^0.4.17"
+  },
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "chai-as-promised": "^6.0.0",
+    "cql-execution": "^1.2.0",
+    "eslint": "^3.19.0",
+    "fs-extra": "^2.1.2",
+    "mocha": "^3.2.0",
+    "nock": "^9.0.13"
+  },
+  "peerDependencies": {
+    "cql-execution": "^1.2.0"
+  }
+}
