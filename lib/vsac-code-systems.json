@@ -41,6 +41,6 @@
   "2.16.840.1.113883.6.4":      { "name": "ICD10PCS", "uri": "http://www.icd10data.com/icd10pcs" },
   "2.16.840.1.113883.6.86":     { "name": "UMLS" },
   "2.16.840.1.113883.6.88":     { "name": "RXNORM",   "uri": "http://www.nlm.nih.gov/research/umls/rxnorm" },
-  "2.16.840.1.113883.6.90":     { "name": "ICD10CM" },
+  "2.16.840.1.113883.6.90":     { "name": "ICD10CM",  "uri": "http://hl7.org/fhir/sid/icd-10-cm" },
   "2.16.840.1.113883.6.96":     { "name": "SNOMEDCT", "uri": "http://snomed.info/sct" }
 }
