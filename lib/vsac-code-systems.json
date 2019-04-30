@@ -1,5 +1,5 @@
 ﻿{
-  "2.16.840.1.113883.12.112":   { "name": "DischargeDisposition" ,  "uri": "http://hl7.org/fhir/discharge-disposition" },
+  "2.16.840.1.113883.12.112":   { "name": "DischargeDisposition" },
   "2.16.840.1.113883.12.292":   { "name": "CVX",      "uri": "http://hl7.org/fhir/sid/cvx" },
   "2.16.840.1.113883.18.2":     { "name": "AdministrativeSex" , "uri": "http://hl7.org/fhir/v2/0001" },
   "2.16.840.1.113883.3.221.5":  { "name": "SOP" , "uri": "http://www.nlm.nih.gov/research/umls/sop" },
