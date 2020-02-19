@@ -229,25 +229,25 @@ describe('CodeService', function() {
       ];
 
       return service.ensureValueSets(vsList, username, password)
-      .then(function() {
-        should.fail(0, 1, 'This code should never be executed since there were errors');
-      })
-      .catch(function(error) {
+        .then(function() {
+          should.fail(0, 1, 'This code should never be executed since there were errors');
+        })
+        .catch(function(error) {
         // Test that the value sets were properly loaded into memory
-        service.valueSets.should.not.be.empty;
-        Object.keys(service.valueSets).should.have.length(3);
-        const vs1 = service.findValueSet('1.2.3.4.5.6.7.8.9.10');
-        should.not.exist(vs1);
-        const vs2 = service.findValueSet('2.16.840.1.113883.3.600.2390', '20170418');
-        vs2.codes.should.have.length(24);
-        // Test that the value sets were properly written to the cache
-        const cached = require(path.join(tmpCache, 'valueset-db.json'));
-        JSON.parse(JSON.stringify(service.valueSets)).should.eql(cached);
-        // Test that the error was thrown
-        error.should.have.length(1);
-        error[0].should.be.an('error');
-        error[0].message.should.contain('1.2.3.4.5.6.7.8.9.10');
-      });
+          service.valueSets.should.not.be.empty;
+          Object.keys(service.valueSets).should.have.length(3);
+          const vs1 = service.findValueSet('1.2.3.4.5.6.7.8.9.10');
+          should.not.exist(vs1);
+          const vs2 = service.findValueSet('2.16.840.1.113883.3.600.2390', '20170418');
+          vs2.codes.should.have.length(24);
+          // Test that the value sets were properly written to the cache
+          const cached = require(path.join(tmpCache, 'valueset-db.json'));
+          JSON.parse(JSON.stringify(service.valueSets)).should.eql(cached);
+          // Test that the error was thrown
+          error.should.have.length(1);
+          error[0].should.be.an('error');
+          error[0].message.should.contain('1.2.3.4.5.6.7.8.9.10');
+        });
     });
 
     it('should error if no username/password is supplied', function() {
@@ -263,12 +263,12 @@ describe('CodeService', function() {
           {name: 'Systolic Blood Pressure', id: '2.16.840.1.113883.3.526.3.1032', version: '20170320'}
         ];
         return service.ensureValueSets(vsList, null, null)
-        .then(function() {
-          should.fail(0, 1, 'This code should never be executed');
-        })
-        .catch(function(error) {
-          error.should.eql('Failed to download value sets since UMLS_USER_NAME and/or UMLS_PASSWORD is not set.');
-        });
+          .then(function() {
+            should.fail(0, 1, 'This code should never be executed');
+          })
+          .catch(function(error) {
+            error.should.eql('Failed to download value sets since UMLS_USER_NAME and/or UMLS_PASSWORD is not set.');
+          });
       } finally {
         [process.env['UMLS_USER_NAME'], process.env['UMLS_PASSWORD']] = [oldU, oldP];
       }
@@ -286,12 +286,12 @@ describe('CodeService', function() {
       ];
 
       return service.ensureValueSets(vsList, wrongU, wrongP)
-      .then(function() {
-        should.fail(0, 1, 'This code should never be executed');
-      })
-      .catch(function(error) {
-        error.statusCode.should.equal(401);
-      });
+        .then(function() {
+          should.fail(0, 1, 'This code should never be executed');
+        })
+        .catch(function(error) {
+          error.statusCode.should.equal(401);
+        });
     });
 
     it('should error if invalid ticket granting ticket is supplied', function() {
@@ -308,14 +308,14 @@ describe('CodeService', function() {
         {name: 'Systolic Blood Pressure', id: '2.16.840.1.113883.3.526.3.1032', version: '20170320'}
       ];
       return service.ensureValueSets(vsList, username, password)
-      .then(function() {
-        should.fail(0, 1, 'This code should never be executed');
-      })
-      .catch(function(error) {
-        error.should.have.length(1);
-        error[0].should.be.an('error');
-        error[0].message.should.contain('2.16.840.1.113883.3.526.3.1032');
-      });
+        .then(function() {
+          should.fail(0, 1, 'This code should never be executed');
+        })
+        .catch(function(error) {
+          error.should.have.length(1);
+          error[0].should.be.an('error');
+          error[0].message.should.contain('2.16.840.1.113883.3.526.3.1032');
+        });
     });
 
     it('should error if invalid service granting ticket is supplied', function() {
@@ -336,14 +336,14 @@ describe('CodeService', function() {
         {name: 'Systolic Blood Pressure', id: '2.16.840.1.113883.3.526.3.1032', version: '20170320'}
       ];
       return service.ensureValueSets(vsList, username, password)
-      .then(function() {
-        should.fail(0, 1, 'This code should never be executed');
-      })
-      .catch(function(error) {
-        error.should.have.length(1);
-        error[0].should.be.an('error');
-        error[0].message.should.contain('2.16.840.1.113883.3.526.3.1032');
-      });
+        .then(function() {
+          should.fail(0, 1, 'This code should never be executed');
+        })
+        .catch(function(error) {
+          error.should.have.length(1);
+          error[0].should.be.an('error');
+          error[0].message.should.contain('2.16.840.1.113883.3.526.3.1032');
+        });
     });
 
     it('should error if value set is not found', function() {
@@ -363,14 +363,14 @@ describe('CodeService', function() {
         {name: 'Fake Value Set', id: '1.2.3.4.5.6.7.8.9.10', version: '20170320'}
       ];
       return service.ensureValueSets(vsList, username, password)
-      .then(function() {
-        should.fail(0, 1, 'This code should never be executed');
-      })
-      .catch(function(error) {
-        error.should.have.length(1);
-        error[0].should.be.an('error');
-        error[0].message.should.contain('1.2.3.4.5.6.7.8.9.10');
-      });
+        .then(function() {
+          should.fail(0, 1, 'This code should never be executed');
+        })
+        .catch(function(error) {
+          error.should.have.length(1);
+          error[0].should.be.an('error');
+          error[0].message.should.contain('1.2.3.4.5.6.7.8.9.10');
+        });
     });
   });
 });
