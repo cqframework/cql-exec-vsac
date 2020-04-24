@@ -70,9 +70,12 @@ describe('CodeService', function() {
     it('should find loaded value set', function() {
       const oid = '2.16.840.1.113883.3.464.1003.104.12.1013';
       const results = service.findValueSetsByOid(oid);
-      results.should.have.length(1);
+      results.should.have.length(2);
       results[0].should.eql(new ValueSet(oid, '20170320', [
         new Code('2093-3', 'http://loinc.org', '2.58'),
+        new Code('48620-9', 'http://loinc.org', '2.58')
+      ]));
+      results[1].should.eql(new ValueSet(oid, '20200401', [
         new Code('48620-9', 'http://loinc.org', '2.58')
       ]));
     });
@@ -83,12 +86,140 @@ describe('CodeService', function() {
     });
   });
 
+  describe('#findValueSets', function() {
+    it('should find loaded values set by OID', function() {
+      const oid = '2.16.840.1.113883.3.464.1003.104.12.1013';
+      const results = service.findValueSets(oid);
+      results.should.have.length(2);
+      results[0].should.eql(new ValueSet(oid, '20170320', [
+        new Code('2093-3', 'http://loinc.org', '2.58'),
+        new Code('48620-9', 'http://loinc.org', '2.58')
+      ]));
+      results[1].should.eql(new ValueSet(oid, '20200401', [
+        new Code('48620-9', 'http://loinc.org', '2.58')
+      ]));
+    });
+
+    it('should find loaded values set by URN', function() {
+      const urn = 'urn:oid:2.16.840.1.113883.3.464.1003.104.12.1013';
+      const results = service.findValueSets(urn);
+      results.should.have.length(2);
+      results[0].should.eql(new ValueSet('2.16.840.1.113883.3.464.1003.104.12.1013', '20170320', [
+        new Code('2093-3', 'http://loinc.org', '2.58'),
+        new Code('48620-9', 'http://loinc.org', '2.58')
+      ]));
+      results[1].should.eql(new ValueSet('2.16.840.1.113883.3.464.1003.104.12.1013', '20200401', [
+        new Code('48620-9', 'http://loinc.org', '2.58')
+      ]));
+    });
+
+
+    it('should find loaded values set by https URL', function() {
+      const urn = 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013';
+      const results = service.findValueSets(urn);
+      results.should.have.length(2);
+      results[0].should.eql(new ValueSet('2.16.840.1.113883.3.464.1003.104.12.1013', '20170320', [
+        new Code('2093-3', 'http://loinc.org', '2.58'),
+        new Code('48620-9', 'http://loinc.org', '2.58')
+      ]));
+      results[1].should.eql(new ValueSet('2.16.840.1.113883.3.464.1003.104.12.1013', '20200401', [
+        new Code('48620-9', 'http://loinc.org', '2.58')
+      ]));
+    });
+
+    it('should find loaded values set by http URL', function() {
+      const urn = 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013';
+      const results = service.findValueSets(urn);
+      results.should.have.length(2);
+      results[0].should.eql(new ValueSet('2.16.840.1.113883.3.464.1003.104.12.1013', '20170320', [
+        new Code('2093-3', 'http://loinc.org', '2.58'),
+        new Code('48620-9', 'http://loinc.org', '2.58')
+      ]));
+      results[1].should.eql(new ValueSet('2.16.840.1.113883.3.464.1003.104.12.1013', '20200401', [
+        new Code('48620-9', 'http://loinc.org', '2.58')
+      ]));
+    });
+
+    it('should find loaded value set by https URL with version', function() {
+      const urn = 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013|20170320';
+      const results = service.findValueSets(urn);
+      results.should.have.length(1);
+      results[0].should.eql(new ValueSet('2.16.840.1.113883.3.464.1003.104.12.1013', '20170320', [
+        new Code('2093-3', 'http://loinc.org', '2.58'),
+        new Code('48620-9', 'http://loinc.org', '2.58')
+      ]));
+    });
+
+    it('should find loaded value set by http URL with version', function() {
+      const urn = 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013|20170320';
+      const results = service.findValueSets(urn);
+      results.should.have.length(1);
+      results[0].should.eql(new ValueSet('2.16.840.1.113883.3.464.1003.104.12.1013', '20170320', [
+        new Code('2093-3', 'http://loinc.org', '2.58'),
+        new Code('48620-9', 'http://loinc.org', '2.58')
+      ]));
+    });
+
+    it('should not find invalid value set by OID', function() {
+      const results = service.findValueSets('FOO');
+      results.should.be.empty;
+    });
+
+    it('should not find invalid value set by URN', function() {
+      const results = service.findValueSets('urn:oid:FOO');
+      results.should.be.empty;
+    });
+
+    it('should not find invalid value set by https URL', function() {
+      const results = service.findValueSets('https://cts.nlm.nih.gov/fhir/ValueSet/FOO');
+      results.should.be.empty;
+    });
+
+    it('should not find invalid value set by http URL', function() {
+      const results = service.findValueSets('http://cts.nlm.nih.gov/fhir/ValueSet/FOO');
+      results.should.be.empty;
+    });
+
+    it('should not find value set by https URL with invalid version', function() {
+      const results = service.findValueSets('https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013|20180320');
+      results.should.be.empty;
+    });
+
+    it('should not find value set by http URL with invalid version', function() {
+      const results = service.findValueSets('http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013|20180320');
+      results.should.be.empty;
+    });
+  });
+
   describe('#findValueSet', function() {
     it('should find loaded value set by OID only', function() {
       const oid = '2.16.840.1.113883.3.464.1003.104.12.1013';
       const result = service.findValueSet(oid);
-      result.should.eql(new ValueSet(oid, '20170320', [
-        new Code('2093-3', 'http://loinc.org', '2.58'),
+      result.should.eql(new ValueSet(oid, '20200401', [
+        new Code('48620-9', 'http://loinc.org', '2.58')
+      ]));
+    });
+
+    it('should find loaded value set by URN only', function() {
+      const urn = 'urn:oid:2.16.840.1.113883.3.464.1003.104.12.1013';
+      const result = service.findValueSet(urn);
+      result.should.eql(new ValueSet('2.16.840.1.113883.3.464.1003.104.12.1013', '20200401', [
+        new Code('48620-9', 'http://loinc.org', '2.58')
+      ]));
+    });
+
+    it('should find loaded value set by https URL only', function() {
+      const urn = 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013';
+      const result = service.findValueSet(urn);
+      result.should.eql(new ValueSet('2.16.840.1.113883.3.464.1003.104.12.1013', '20200401', [
+        new Code('48620-9', 'http://loinc.org', '2.58')
+      ]));
+    });
+
+    it('should find loaded value set by http URL only', function() {
+      const urn = 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013';
+      const result = service.findValueSet(urn);
+      result.should.eql(new ValueSet('2.16.840.1.113883.3.464.1003.104.12.1013', '20200401', [
         new Code('48620-9', 'http://loinc.org', '2.58')
       ]));
     });
@@ -99,6 +230,71 @@ describe('CodeService', function() {
       const result = service.findValueSet(oid, version);
       result.should.eql(new ValueSet(oid, version, [
         new Code('2093-3', 'http://loinc.org', '2.58'),
+        new Code('48620-9', 'http://loinc.org', '2.58')
+      ]));
+    });
+
+    it('should find loaded value set by URN and version', function() {
+      const urn = 'urn:oid:2.16.840.1.113883.3.464.1003.104.12.1013';
+      const version = '20170320';
+      const result = service.findValueSet(urn, version);
+      result.should.eql(new ValueSet('2.16.840.1.113883.3.464.1003.104.12.1013', version, [
+        new Code('2093-3', 'http://loinc.org', '2.58'),
+        new Code('48620-9', 'http://loinc.org', '2.58')
+      ]));
+    });
+
+    it('should find loaded value set by https URL and version', function() {
+      const url = 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013';
+      const version = '20170320';
+      const result = service.findValueSet(url, version);
+      result.should.eql(new ValueSet('2.16.840.1.113883.3.464.1003.104.12.1013', version, [
+        new Code('2093-3', 'http://loinc.org', '2.58'),
+        new Code('48620-9', 'http://loinc.org', '2.58')
+      ]));
+    });
+
+    it('should find loaded value set by http URL and version', function() {
+      const url = 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013';
+      const version = '20170320';
+      const result = service.findValueSet(url, version);
+      result.should.eql(new ValueSet('2.16.840.1.113883.3.464.1003.104.12.1013', version, [
+        new Code('2093-3', 'http://loinc.org', '2.58'),
+        new Code('48620-9', 'http://loinc.org', '2.58')
+      ]));
+    });
+
+    it('should find loaded value set by https URL and embedded version', function() {
+      const url = 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013|20170320';
+      const result = service.findValueSet(url);
+      result.should.eql(new ValueSet('2.16.840.1.113883.3.464.1003.104.12.1013', '20170320', [
+        new Code('2093-3', 'http://loinc.org', '2.58'),
+        new Code('48620-9', 'http://loinc.org', '2.58')
+      ]));
+    });
+
+    it('should find loaded value set by http URL and embedded version', function() {
+      const url = 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013|20170320';
+      const result = service.findValueSet(url);
+      result.should.eql(new ValueSet('2.16.840.1.113883.3.464.1003.104.12.1013', '20170320', [
+        new Code('2093-3', 'http://loinc.org', '2.58'),
+        new Code('48620-9', 'http://loinc.org', '2.58')
+      ]));
+    });
+
+    it('should prefer passed in version over url-embedded version', function() {
+      const url = 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013|20200401';
+      const version = '20170320';
+      const result = service.findValueSet(url, version);
+      result.should.eql(new ValueSet('2.16.840.1.113883.3.464.1003.104.12.1013', version, [
+        new Code('2093-3', 'http://loinc.org', '2.58'),
+        new Code('48620-9', 'http://loinc.org', '2.58')
+      ]));
+
+      const url2 = 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013|20170320';
+      const version2 = '20200401';
+      const result2 = service.findValueSet(url2, version2);
+      result2.should.eql(new ValueSet('2.16.840.1.113883.3.464.1003.104.12.1013', version2, [
         new Code('48620-9', 'http://loinc.org', '2.58')
       ]));
     });
@@ -115,14 +311,119 @@ describe('CodeService', function() {
   });
 
   describe('#ensureValueSets', function() {
-    it('should not attempt downloads for value sets it already has', function() {
+    it('should not attempt downloads for value sets it already has (by OID)', function() {
       const vsList = [
         {name: 'HDL Cholesterol', id: '2.16.840.1.113883.3.464.1003.104.12.1013', version: '20170320'}
       ];
       return service.ensureValueSets(vsList).should.be.fulfilled;
     });
 
-    it('should download value sets it does not have', function() {
+    it('should not attempt downloads for value sets it already has (by URN)', function() {
+      const vsList = [
+        {name: 'HDL Cholesterol', id: 'urn:oid:2.16.840.1.113883.3.464.1003.104.12.1013', version: '20170320'}
+      ];
+      return service.ensureValueSets(vsList).should.be.fulfilled;
+    });
+
+    it('should not attempt downloads for value sets it already has (by https URL)', function() {
+      const vsList = [
+        {name: 'HDL Cholesterol', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013', version: '20170320'}
+      ];
+      return service.ensureValueSets(vsList).should.be.fulfilled;
+    });
+
+    it('should not attempt downloads for value sets it already has (by http URL)', function() {
+      const vsList = [
+        {name: 'HDL Cholesterol', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013', version: '20170320'}
+      ];
+      return service.ensureValueSets(vsList).should.be.fulfilled;
+    });
+
+    it('should not attempt downloads for value sets it already has (by https URL with embedded version)', function() {
+      const vsList = [
+        {name: 'HDL Cholesterol', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013|20170320'}
+      ];
+      return service.ensureValueSets(vsList).should.be.fulfilled;
+    });
+
+    it('should not attempt downloads for value sets it already has (by http URL with embedded version)', function() {
+      const vsList = [
+        {name: 'HDL Cholesterol', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013|20170320'}
+      ];
+      return service.ensureValueSets(vsList).should.be.fulfilled;
+    });
+
+    it('should download value sets it does not have (by OID)', function() {
+      return doDownloadTest([
+        {name: 'Systolic Blood Pressure', id: '2.16.840.1.113883.3.526.3.1032', version: '20170320'},
+        {name: 'Current Tobacco Smoker', id: '2.16.840.1.113883.3.600.2390', version: '20170320'}
+      ]);
+    });
+
+    it('should download value sets it does not have (by URN)', function() {
+      return doDownloadTest([
+        {name: 'Systolic Blood Pressure', id: 'urn:oid:2.16.840.1.113883.3.526.3.1032', version: '20170320'},
+        {name: 'Current Tobacco Smoker', id: 'urn:oid:2.16.840.1.113883.3.600.2390', version: '20170320'}
+      ]);
+    });
+
+    it('should download value sets it does not have (by https URL)', function() {
+      return doDownloadTest([
+        {name: 'Systolic Blood Pressure', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1032', version: '20170320'},
+        {name: 'Current Tobacco Smoker', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.2390', version: '20170320'}
+      ]);
+    });
+
+    it('should download value sets it does not have (by http URL)', function() {
+      return doDownloadTest([
+        {name: 'Systolic Blood Pressure', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1032', version: '20170320'},
+        {name: 'Current Tobacco Smoker', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.2390', version: '20170320'}
+      ]);
+    });
+
+    it('should download value sets it does not have (by https URL with embedded version)', function() {
+      return doDownloadTest([
+        {name: 'Systolic Blood Pressure', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1032|20170320'},
+        {name: 'Current Tobacco Smoker', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.2390|20170320'}
+      ]);
+    });
+
+    it('should download value sets it does not have (by http URL with embedded version)', function() {
+      return doDownloadTest([
+        {name: 'Systolic Blood Pressure', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1032|20170320'},
+        {name: 'Current Tobacco Smoker', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.2390|20170320'}
+      ]);
+    });
+
+    it('should download value sets it does not have when no version is supplied (by OID)', function() {
+      return doDownloadTest([
+        {name: 'Systolic Blood Pressure', id: '2.16.840.1.113883.3.526.3.1032'},
+        {name: 'Current Tobacco Smoker', id: '2.16.840.1.113883.3.600.2390'}
+      ]);
+    });
+
+    it('should download value sets it does not have when no version is supplied (by URN)', function() {
+      return doDownloadTest([
+        {name: 'Systolic Blood Pressure', id: 'urn:oid:2.16.840.1.113883.3.526.3.1032'},
+        {name: 'Current Tobacco Smoker', id: 'urn:oid:2.16.840.1.113883.3.600.2390'}
+      ]);
+    });
+
+    it('should download value sets it does not have when no version is supplied (by https URL)', function() {
+      return doDownloadTest([
+        {name: 'Systolic Blood Pressure', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1032'},
+        {name: 'Current Tobacco Smoker', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.2390'}
+      ]);
+    });
+
+    it('should download value sets it does not have when no version is supplied (by http URL)', function() {
+      return doDownloadTest([
+        {name: 'Systolic Blood Pressure', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1032'},
+        {name: 'Current Tobacco Smoker', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.2390'}
+      ]);
+    });
+
+    const doDownloadTest = (vsList) => {
       // Just to be sure, check length is only 2 (as expected)
       Object.keys(service.valueSets).should.have.length(2);
 
@@ -142,11 +443,6 @@ describe('CodeService', function() {
         .get('/vsac/svs/RetrieveValueSet')
         .query({ id: '2.16.840.1.113883.3.600.2390', ticket: 'ST-TEST-2' })
         .replyWithFile(200, path.join(__dirname, 'fixtures', '2.16.840.1.113883.3.600.2390.xml'));
-
-      const vsList = [
-        {name: 'Systolic Blood Pressure', id: '2.16.840.1.113883.3.526.3.1032', version: '20170320'},
-        {name: 'Current Tobacco Smoker', id: '2.16.840.1.113883.3.600.2390', version: '20170320'}
-      ];
 
       return service.ensureValueSets(vsList, username, password).then(function() {
         // Test that the value sets were properly loaded into memory
@@ -159,48 +455,8 @@ describe('CodeService', function() {
         // Test that the value sets were properly written to the cache
         const cached = require(path.join(tmpCache, 'valueset-db.json'));
         JSON.parse(JSON.stringify(service.valueSets)).should.eql(cached);
-      });
-    });
-
-    it('should download value sets it does not have when no version is supplied', function() {
-      // Just to be sure, check length is only 2 (as expected)
-      Object.keys(service.valueSets).should.have.length(2);
-
-      nock('https://vsac.nlm.nih.gov')
-        // Ticket granting ticket
-        .post('/vsac/ws/Ticket', { username, password })
-        .reply(200, 'TGT-TEST')
-        // Service ticket and VS retrieval #1
-        .post('/vsac/ws/Ticket/TGT-TEST', { service: 'http://umlsks.nlm.nih.gov' })
-        .reply(200, 'ST-TEST-1')
-        .get('/vsac/svs/RetrieveValueSet')
-        .query({ id: '2.16.840.1.113883.3.526.3.1032', ticket: 'ST-TEST-1' })
-        .replyWithFile(200, path.join(__dirname, 'fixtures', '2.16.840.1.113883.3.526.3.1032.xml'))
-        // Service ticket and VS retrieval #2
-        .post('/vsac/ws/Ticket/TGT-TEST', { service: 'http://umlsks.nlm.nih.gov' })
-        .reply(200, 'ST-TEST-2')
-        .get('/vsac/svs/RetrieveValueSet')
-        .query({ id: '2.16.840.1.113883.3.600.2390', ticket: 'ST-TEST-2' })
-        .replyWithFile(200, path.join(__dirname, 'fixtures', '2.16.840.1.113883.3.600.2390.xml'));
-
-      const vsList = [
-        {name: 'Systolic Blood Pressure', id: '2.16.840.1.113883.3.526.3.1032'},
-        {name: 'Current Tobacco Smoker', id: '2.16.840.1.113883.3.600.2390'}
-      ];
-
-      return service.ensureValueSets(vsList, username, password).then(function() {
-        // Test that the value sets were properly loaded into memory
-        service.valueSets.should.not.be.empty;
-        Object.keys(service.valueSets).should.have.length(4);
-        const vs1 = service.findValueSet('2.16.840.1.113883.3.526.3.1032');
-        vs1.codes.should.have.length(1);
-        const vs2 = service.findValueSet('2.16.840.1.113883.3.600.2390');
-        vs2.codes.should.have.length(24);
-        // Test that the value sets were properly written to the cache
-        const cached = require(path.join(tmpCache, 'valueset-db.json'));
-        JSON.parse(JSON.stringify(service.valueSets)).should.eql(cached);
-      });
-    });
+      }).catch((err) => console.log(err));
+    };
 
     it('should download and cache successful value sets before throwing error', function() {
       // Just to be sure, check length is only 2 (as expected)

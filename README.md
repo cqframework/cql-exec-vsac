@@ -2,10 +2,13 @@
 
 This project establishes a VSAC-enabled code service module for use with the CQL Execution Engine.  This allows the
 CQL Execution Engine to execute CQL containing references to Value Sets that are published in the National Library of
-Medicine's (NLM) Value Set Authority Center (VSAC).  Value Set references should be defined using OIDS.  For example:
+Medicine's (NLM) Value Set Authority Center (VSAC).  Value Set references can be defined using a valid VSAC
+identifying URL for the value set, a URN, or the oid itself.  For example:
 
 ```
-valueset "Diabetes": '2.16.840.1.113883.3.464.1003.103.12.1001'
+valueset "Diabetes": 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.103.12.1001'
+// or valueset "Diabetes": 'urn:oid:2.16.840.1.113883.3.464.1003.103.12.1001'
+// or valueset "Diabetes": '2.16.840.1.113883.3.464.1003.103.12.1001'
 ```
 
 This library requires that the credentials of a valid UMLS account be provided to it.  If you do not have an UMLS
@@ -41,13 +44,15 @@ provided via `UMLS_USER_NAME` and `UMLS_PASSWORD` environment variables.
 
 ## Downloading Value Set Definitions
 
-The `ensureValueSets` function is the only function that attempts to download value sets from VSAC.  Before it makes
-a request to VSAC, it will check the cache.  If the value set is already in the cache, it will not make a request to
-VSAC.  Otherwise, it will use VSAC's SVS2 API to download the expanded codes from the value set.
+The `ensureValueSets` and `ensureValueSetsInLibrary` functions are the only functions that attempt to download value
+sets from VSAC.  Before they make a request to VSAC, they will check the cache.  If the value set is already in the
+cache, they will not make a request to VSAC.  Otherwise, they will use VSAC's SVS2 API to download the expanded codes
+from the value set.
 
-The `findValueSetsByOID` and `findValueSet` functions do not reach out to VSAC, so implementations should call
-`ensureValueSets` with the value set OIDs / versions first, before attempting to execute CQL.  Usually an implementor
-will extract the list of value set OIDs / versions from the ELM to pass them into `ensureValueSets`.
+The `findValueSet` and `findValueSets` functions (including the legacy `findValueSetsByOid` function) do not reach out
+to VSAC, so implementations should call `ensureValueSetsInLibrary` or `ensureValueSets` before attempting to execute
+CQL.  If `ensureValueSets` is used, the implementor is responsible for passing in the OIDs / versions that will be
+needed.
 
 ## Example
 
@@ -60,17 +65,10 @@ const vsac = require('cql-exec-vsac');
 // Code setting up the CQL library, patient source, parameters, etc
 // ...
 
-// Extract the value sets from the ELM
-let valueSets = [];
-const json = JSON.parse(fs.readFileSync('/path/to/cdsELM.json', 'utf8'));
-if (json.library && json.library.valueSets && json.library.valueSets.def) {
-  valueSets = json.library.valueSets.def;
-}
-
 // Set up the code service, loading from the cache if it exists
 const codeService = new vsac.CodeService('/path/to/vsac_cache', true);
-// Ensure value sets, downloading any missing value sets
-codeService.ensureValueSets(valueSets, 'myUMLSUserName', 'myUMLSPassword')
+// Ensure value sets in the library and its dependencies, downloading any missing value sets
+codeService.ensureValueSetsInLibrary(library, true, 'myUMLSUserName', 'myUMLSPassword')
 .then(() => {
   // Value sets are loaded, so execute!
   const executor = new cql.Executor(lib, codeService, parameters);
