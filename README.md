@@ -11,6 +11,24 @@ valueset "Diabetes": 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.
 // or valueset "Diabetes": '2.16.840.1.113883.3.464.1003.103.12.1001'
 ```
 
+As of 1.1.1, this library supports Value Set versions, so the following is also supported:
+
+```
+valueset "Diabetes": 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.103.12.1001' version '20190315'
+// or valueset "Diabetes": 'urn:oid:2.16.840.1.113883.3.464.1003.103.12.1001' version '20190315'
+// or valueset "Diabetes": '2.16.840.1.113883.3.464.1003.103.12.1001' version '20190315'
+```
+
+When using the canonical URL as a Value Set identifier, it is also possible to embed the version directly in the URL, using a vertical bar (`|`) to separate the identifier and version:
+
+```
+valueset "Diabetes": 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.103.12.1001|20190315'
+```
+
+The embedded version, however, is only supported for the canonical URL form of value sets.  It is not supported for URN or OID identifiers.
+
+## Credentials Required
+
 This library requires that the credentials of a valid UMLS account be provided to it.  If you do not have an UMLS
 account, you can request one here: https://uts.nlm.nih.gov/license.html
 
