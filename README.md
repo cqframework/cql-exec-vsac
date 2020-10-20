@@ -60,6 +60,10 @@ Downloading value set definitions from VSAC requires a valid UMLS account.  The 
 function allows a UMLS username and password to be passed in.  Alternately, the UMLS username and password can be
 provided via `UMLS_USER_NAME` and `UMLS_PASSWORD` environment variables.
 
+**NOTE**: As of Jan 1 2021 VSAC will no longer accept accept username and password and will require an API key.  The code 
+service's `ensureValueSetsWithAPIKey` allows a UMLS API key to be passed in.  Alternatively, the UMLS API key can be
+provided via `UMLS_API_KEY` environment variables.
+
 ## Downloading Value Set Definitions
 
 The `ensureValueSets` and `ensureValueSetsInLibrary` functions are the only functions that attempt to download value

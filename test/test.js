@@ -391,8 +391,8 @@ describe('CodeService', function() {
 
 
   //Tests using username/password for auth
-  console.warn("WARNING! As of Jan 1 2021 VSAC will no longer accept accept username and password.  As such "
-    + "'ensureValueSets' has been deprecated");
+  console.warn('WARNING! As of Jan 1 2021 VSAC will no longer accept accept username and password.  As such '
+    + 'ensureValueSets has been deprecated');
   describe('#ensureValueSets', function() {
     it('should not attempt downloads for value sets it already has (by OID)', function() {
       const vsList = [
@@ -578,148 +578,148 @@ describe('CodeService', function() {
     };
   });
 
-    //Updated tests for use with API Key based auth
-    describe('#ensureValueSetsWithAPIKey', function() {
-      it('should not attempt downloads for value sets it already has (by OID)', function() {
-        const vsList = [
-          {name: 'HDL Cholesterol', id: '2.16.840.1.113883.3.464.1003.104.12.1013'}
-        ];
-        return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
-      });
+  //Updated tests for use with API Key based auth
+  describe('#ensureValueSetsWithAPIKey', function() {
+    it('should not attempt downloads for value sets it already has (by OID)', function() {
+      const vsList = [
+        {name: 'HDL Cholesterol', id: '2.16.840.1.113883.3.464.1003.104.12.1013'}
+      ];
+      return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+    });
 
-      it('should not attempt downloads for value sets it already has (by OID and version)', function() {
-        const vsList = [
-          {name: 'HDL Cholesterol', id: '2.16.840.1.113883.3.464.1003.104.12.1013', version: '20170320'}
-        ];
-        return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
-      });
+    it('should not attempt downloads for value sets it already has (by OID and version)', function() {
+      const vsList = [
+        {name: 'HDL Cholesterol', id: '2.16.840.1.113883.3.464.1003.104.12.1013', version: '20170320'}
+      ];
+      return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+    });
 
-      it('should not attempt downloads for value sets it already has (by URN)', function() {
-        const vsList = [
-          {name: 'HDL Cholesterol', id: 'urn:oid:2.16.840.1.113883.3.464.1003.104.12.1013'}
-        ];
-        return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
-      });
+    it('should not attempt downloads for value sets it already has (by URN)', function() {
+      const vsList = [
+        {name: 'HDL Cholesterol', id: 'urn:oid:2.16.840.1.113883.3.464.1003.104.12.1013'}
+      ];
+      return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+    });
 
-      it('should not attempt downloads for value sets it already has (by URN and version)', function() {
-        const vsList = [
-          {name: 'HDL Cholesterol', id: 'urn:oid:2.16.840.1.113883.3.464.1003.104.12.1013', version: '20170320'}
-        ];
-        return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
-      });
+    it('should not attempt downloads for value sets it already has (by URN and version)', function() {
+      const vsList = [
+        {name: 'HDL Cholesterol', id: 'urn:oid:2.16.840.1.113883.3.464.1003.104.12.1013', version: '20170320'}
+      ];
+      return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+    });
 
-      it('should not attempt downloads for value sets it already has (by https URL)', function() {
-        const vsList = [
-          {name: 'HDL Cholesterol', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013'}
-        ];
-        return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
-      });
+    it('should not attempt downloads for value sets it already has (by https URL)', function() {
+      const vsList = [
+        {name: 'HDL Cholesterol', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013'}
+      ];
+      return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+    });
 
-      it('should not attempt downloads for value sets it already has (by https URL and version)', function() {
-        const vsList = [
-          {name: 'HDL Cholesterol', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013', version: '20170320'}
-        ];
-        return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
-      });
+    it('should not attempt downloads for value sets it already has (by https URL and version)', function() {
+      const vsList = [
+        {name: 'HDL Cholesterol', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013', version: '20170320'}
+      ];
+      return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+    });
 
-      it('should not attempt downloads for value sets it already has (by http URL)', function() {
-        const vsList = [
-          {name: 'HDL Cholesterol', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013'}
-        ];
-        return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
-      });
+    it('should not attempt downloads for value sets it already has (by http URL)', function() {
+      const vsList = [
+        {name: 'HDL Cholesterol', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013'}
+      ];
+      return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+    });
 
 
-      it('should not attempt downloads for value sets it already has (by http URL and version)', function() {
-        const vsList = [
-          {name: 'HDL Cholesterol', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013', version: '20170320'}
-        ];
-        return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
-      });
+    it('should not attempt downloads for value sets it already has (by http URL and version)', function() {
+      const vsList = [
+        {name: 'HDL Cholesterol', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013', version: '20170320'}
+      ];
+      return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+    });
 
-      it('should not attempt downloads for value sets it already has (by https URL with embedded version)', function() {
-        const vsList = [
-          {name: 'HDL Cholesterol', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013|20170320'}
-        ];
-        return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
-      });
+    it('should not attempt downloads for value sets it already has (by https URL with embedded version)', function() {
+      const vsList = [
+        {name: 'HDL Cholesterol', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013|20170320'}
+      ];
+      return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+    });
 
-      it('should not attempt downloads for value sets it already has (by http URL with embedded version)', function() {
-        const vsList = [
-          {name: 'HDL Cholesterol', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013|20170320'}
-        ];
-        return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
-      });
+    it('should not attempt downloads for value sets it already has (by http URL with embedded version)', function() {
+      const vsList = [
+        {name: 'HDL Cholesterol', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013|20170320'}
+      ];
+      return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+    });
 
-      it('should download value sets it does not have (by OID)', function() {
-        return doDownloadTestWithAPIKey([
-          {name: 'Systolic Blood Pressure', id: '2.16.840.1.113883.3.526.3.1032'},
-          {name: 'Current Tobacco Smoker', id: '2.16.840.1.113883.3.600.2390'}
-        ]);
-      });
+    it('should download value sets it does not have (by OID)', function() {
+      return doDownloadTestWithAPIKey([
+        {name: 'Systolic Blood Pressure', id: '2.16.840.1.113883.3.526.3.1032'},
+        {name: 'Current Tobacco Smoker', id: '2.16.840.1.113883.3.600.2390'}
+      ]);
+    });
 
-      it('should download value sets it does not have (by OID and version)', function() {
-        return doDownloadTestWithAPIKey([
-          {name: 'Systolic Blood Pressure', id: '2.16.840.1.113883.3.526.3.1032', version: '20170320'},
-          {name: 'Current Tobacco Smoker', id: '2.16.840.1.113883.3.600.2390', version: '20170320'}
-        ], true);
-      });
+    it('should download value sets it does not have (by OID and version)', function() {
+      return doDownloadTestWithAPIKey([
+        {name: 'Systolic Blood Pressure', id: '2.16.840.1.113883.3.526.3.1032', version: '20170320'},
+        {name: 'Current Tobacco Smoker', id: '2.16.840.1.113883.3.600.2390', version: '20170320'}
+      ], true);
+    });
 
-      it('should download value sets it does not have when no version is supplied (by URN)', function() {
-        return doDownloadTestWithAPIKey([
-          {name: 'Systolic Blood Pressure', id: 'urn:oid:2.16.840.1.113883.3.526.3.1032'},
-          {name: 'Current Tobacco Smoker', id: 'urn:oid:2.16.840.1.113883.3.600.2390'}
-        ]);
-      });
+    it('should download value sets it does not have when no version is supplied (by URN)', function() {
+      return doDownloadTestWithAPIKey([
+        {name: 'Systolic Blood Pressure', id: 'urn:oid:2.16.840.1.113883.3.526.3.1032'},
+        {name: 'Current Tobacco Smoker', id: 'urn:oid:2.16.840.1.113883.3.600.2390'}
+      ]);
+    });
 
-      it('should download value sets it does not have (by URN and version)', function() {
-        return doDownloadTestWithAPIKey([
-          {name: 'Systolic Blood Pressure', id: 'urn:oid:2.16.840.1.113883.3.526.3.1032', version: '20170320'},
-          {name: 'Current Tobacco Smoker', id: 'urn:oid:2.16.840.1.113883.3.600.2390', version: '20170320'}
-        ], true);
-      });
+    it('should download value sets it does not have (by URN and version)', function() {
+      return doDownloadTestWithAPIKey([
+        {name: 'Systolic Blood Pressure', id: 'urn:oid:2.16.840.1.113883.3.526.3.1032', version: '20170320'},
+        {name: 'Current Tobacco Smoker', id: 'urn:oid:2.16.840.1.113883.3.600.2390', version: '20170320'}
+      ], true);
+    });
 
-      it('should download value sets it does not have when no version is supplied (by https URL)', function() {
-        return doDownloadTestWithAPIKey([
-          {name: 'Systolic Blood Pressure', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1032'},
-          {name: 'Current Tobacco Smoker', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.2390'}
-        ]);
-      });
+    it('should download value sets it does not have when no version is supplied (by https URL)', function() {
+      return doDownloadTestWithAPIKey([
+        {name: 'Systolic Blood Pressure', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1032'},
+        {name: 'Current Tobacco Smoker', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.2390'}
+      ]);
+    });
 
-      it('should download value sets it does not have (by https URL and version)', function() {
-        return doDownloadTestWithAPIKey([
-          {name: 'Systolic Blood Pressure', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1032', version: '20170320'},
-          {name: 'Current Tobacco Smoker', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.2390', version: '20170320'}
-        ], true);
-      });
+    it('should download value sets it does not have (by https URL and version)', function() {
+      return doDownloadTestWithAPIKey([
+        {name: 'Systolic Blood Pressure', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1032', version: '20170320'},
+        {name: 'Current Tobacco Smoker', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.2390', version: '20170320'}
+      ], true);
+    });
 
-      it('should download value sets it does not have (by https URL with embedded version)', function() {
-        return doDownloadTestWithAPIKey([
-          {name: 'Systolic Blood Pressure', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1032|20170320'},
-          {name: 'Current Tobacco Smoker', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.2390|20170320'}
-        ], true);
-      });
+    it('should download value sets it does not have (by https URL with embedded version)', function() {
+      return doDownloadTestWithAPIKey([
+        {name: 'Systolic Blood Pressure', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1032|20170320'},
+        {name: 'Current Tobacco Smoker', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.2390|20170320'}
+      ], true);
+    });
 
-      it('should download value sets it does not have when no version is supplied (by http URL)', function() {
-        return doDownloadTestWithAPIKey([
-          {name: 'Systolic Blood Pressure', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1032'},
-          {name: 'Current Tobacco Smoker', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.2390'}
-        ]);
-      });
+    it('should download value sets it does not have when no version is supplied (by http URL)', function() {
+      return doDownloadTestWithAPIKey([
+        {name: 'Systolic Blood Pressure', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1032'},
+        {name: 'Current Tobacco Smoker', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.2390'}
+      ]);
+    });
 
-      it('should download value sets it does not have (by http URL and version)', function() {
-        return doDownloadTestWithAPIKey([
-          {name: 'Systolic Blood Pressure', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1032', version: '20170320'},
-          {name: 'Current Tobacco Smoker', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.2390', version: '20170320'}
-        ], true);
-      });
+    it('should download value sets it does not have (by http URL and version)', function() {
+      return doDownloadTestWithAPIKey([
+        {name: 'Systolic Blood Pressure', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1032', version: '20170320'},
+        {name: 'Current Tobacco Smoker', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.2390', version: '20170320'}
+      ], true);
+    });
 
-      it('should download value sets it does not have (by http URL with embedded version)', function() {
-        return doDownloadTestWithAPIKey([
-          {name: 'Systolic Blood Pressure', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1032|20170320'},
-          {name: 'Current Tobacco Smoker', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.2390|20170320'}
-        ], true);
-      });
+    it('should download value sets it does not have (by http URL with embedded version)', function() {
+      return doDownloadTestWithAPIKey([
+        {name: 'Systolic Blood Pressure', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1032|20170320'},
+        {name: 'Current Tobacco Smoker', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.2390|20170320'}
+      ], true);
+    });
 
     const doDownloadTestWithAPIKey = (vsList, withVersion = false) => {
       // Just to be sure, check length is only 2 (as expected)
