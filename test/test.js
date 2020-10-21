@@ -870,7 +870,7 @@ describe('CodeService', function() {
             should.fail(0, 1, 'This code should never be executed');
           })
           .catch(function(error) {
-            error.should.eql('Failed to download value sets since UMLS_API_KEYis not set.');
+            error.should.eql('Failed to download value sets since UMLS_API_KEY is not set.');
           });
       } finally {
         process.env['UMLS_API_KEY'] = oldAPIKey;
