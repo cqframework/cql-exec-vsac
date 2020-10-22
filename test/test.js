@@ -12,8 +12,9 @@ const should = chai.should();
 
 describe('CodeService', function() {
   let service, tmpCache;
-  const username = process.env['UMLS_USER_NAME'] || 'testuser';
-  const password = process.env['UMLS_PASSWORD'] || 'testpassword';
+  const username = process.env['UMLS_USER_NAME'] || 'testuser1';
+  const password = process.env['UMLS_PASSWORD'] || 'testpassword23';
+  const apiKey = process.env['UMLS_API_KEY'] || 'testkey';
 
   before(function() {
     // These tests should never reach out to the network.  If they do, we've done something wrong!
@@ -388,6 +389,10 @@ describe('CodeService', function() {
     });
   });
 
+
+  //Tests using username/password for auth
+  console.warn('WARNING! As of Jan 1 2021 VSAC will no longer accept accept username and password.  As such '
+    + 'ensureValueSets has been deprecated');
   describe('#ensureValueSets', function() {
     it('should not attempt downloads for value sets it already has (by OID)', function() {
       const vsList = [
@@ -530,6 +535,7 @@ describe('CodeService', function() {
       ], true);
     });
 
+
     const doDownloadTest = (vsList, withVersion = false) => {
       // Just to be sure, check length is only 2 (as expected)
       Object.keys(service.valueSets).should.have.length(2);
@@ -558,6 +564,191 @@ describe('CodeService', function() {
         .replyWithFile(200, path.join(__dirname, 'fixtures', '2.16.840.1.113883.3.600.2390.xml'));
 
       return service.ensureValueSets(vsList, username, password).then(function() {
+        // Test that the value sets were properly loaded into memory
+        service.valueSets.should.not.be.empty;
+        Object.keys(service.valueSets).should.have.length(4);
+        const vs1 = service.findValueSet('2.16.840.1.113883.3.526.3.1032', '20170320');
+        vs1.codes.should.have.length(1);
+        const vs2 = service.findValueSet('2.16.840.1.113883.3.600.2390', '20170418');
+        vs2.codes.should.have.length(24);
+        // Test that the value sets were properly written to the cache
+        const cached = require(path.join(tmpCache, 'valueset-db.json'));
+        JSON.parse(JSON.stringify(service.valueSets)).should.eql(cached);
+      });//.catch((err) => console.log(err));
+    };
+  });
+
+  //Updated tests for use with API Key based auth
+  describe('#ensureValueSetsWithAPIKey', function() {
+    it('should not attempt downloads for value sets it already has (by OID)', function() {
+      const vsList = [
+        {name: 'HDL Cholesterol', id: '2.16.840.1.113883.3.464.1003.104.12.1013'}
+      ];
+      return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+    });
+
+    it('should not attempt downloads for value sets it already has (by OID and version)', function() {
+      const vsList = [
+        {name: 'HDL Cholesterol', id: '2.16.840.1.113883.3.464.1003.104.12.1013', version: '20170320'}
+      ];
+      return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+    });
+
+    it('should not attempt downloads for value sets it already has (by URN)', function() {
+      const vsList = [
+        {name: 'HDL Cholesterol', id: 'urn:oid:2.16.840.1.113883.3.464.1003.104.12.1013'}
+      ];
+      return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+    });
+
+    it('should not attempt downloads for value sets it already has (by URN and version)', function() {
+      const vsList = [
+        {name: 'HDL Cholesterol', id: 'urn:oid:2.16.840.1.113883.3.464.1003.104.12.1013', version: '20170320'}
+      ];
+      return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+    });
+
+    it('should not attempt downloads for value sets it already has (by https URL)', function() {
+      const vsList = [
+        {name: 'HDL Cholesterol', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013'}
+      ];
+      return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+    });
+
+    it('should not attempt downloads for value sets it already has (by https URL and version)', function() {
+      const vsList = [
+        {name: 'HDL Cholesterol', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013', version: '20170320'}
+      ];
+      return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+    });
+
+    it('should not attempt downloads for value sets it already has (by http URL)', function() {
+      const vsList = [
+        {name: 'HDL Cholesterol', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013'}
+      ];
+      return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+    });
+
+
+    it('should not attempt downloads for value sets it already has (by http URL and version)', function() {
+      const vsList = [
+        {name: 'HDL Cholesterol', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013', version: '20170320'}
+      ];
+      return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+    });
+
+    it('should not attempt downloads for value sets it already has (by https URL with embedded version)', function() {
+      const vsList = [
+        {name: 'HDL Cholesterol', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013|20170320'}
+      ];
+      return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+    });
+
+    it('should not attempt downloads for value sets it already has (by http URL with embedded version)', function() {
+      const vsList = [
+        {name: 'HDL Cholesterol', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013|20170320'}
+      ];
+      return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+    });
+
+    it('should download value sets it does not have (by OID)', function() {
+      return doDownloadTestWithAPIKey([
+        {name: 'Systolic Blood Pressure', id: '2.16.840.1.113883.3.526.3.1032'},
+        {name: 'Current Tobacco Smoker', id: '2.16.840.1.113883.3.600.2390'}
+      ]);
+    });
+
+    it('should download value sets it does not have (by OID and version)', function() {
+      return doDownloadTestWithAPIKey([
+        {name: 'Systolic Blood Pressure', id: '2.16.840.1.113883.3.526.3.1032', version: '20170320'},
+        {name: 'Current Tobacco Smoker', id: '2.16.840.1.113883.3.600.2390', version: '20170320'}
+      ], true);
+    });
+
+    it('should download value sets it does not have when no version is supplied (by URN)', function() {
+      return doDownloadTestWithAPIKey([
+        {name: 'Systolic Blood Pressure', id: 'urn:oid:2.16.840.1.113883.3.526.3.1032'},
+        {name: 'Current Tobacco Smoker', id: 'urn:oid:2.16.840.1.113883.3.600.2390'}
+      ]);
+    });
+
+    it('should download value sets it does not have (by URN and version)', function() {
+      return doDownloadTestWithAPIKey([
+        {name: 'Systolic Blood Pressure', id: 'urn:oid:2.16.840.1.113883.3.526.3.1032', version: '20170320'},
+        {name: 'Current Tobacco Smoker', id: 'urn:oid:2.16.840.1.113883.3.600.2390', version: '20170320'}
+      ], true);
+    });
+
+    it('should download value sets it does not have when no version is supplied (by https URL)', function() {
+      return doDownloadTestWithAPIKey([
+        {name: 'Systolic Blood Pressure', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1032'},
+        {name: 'Current Tobacco Smoker', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.2390'}
+      ]);
+    });
+
+    it('should download value sets it does not have (by https URL and version)', function() {
+      return doDownloadTestWithAPIKey([
+        {name: 'Systolic Blood Pressure', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1032', version: '20170320'},
+        {name: 'Current Tobacco Smoker', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.2390', version: '20170320'}
+      ], true);
+    });
+
+    it('should download value sets it does not have (by https URL with embedded version)', function() {
+      return doDownloadTestWithAPIKey([
+        {name: 'Systolic Blood Pressure', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1032|20170320'},
+        {name: 'Current Tobacco Smoker', id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.2390|20170320'}
+      ], true);
+    });
+
+    it('should download value sets it does not have when no version is supplied (by http URL)', function() {
+      return doDownloadTestWithAPIKey([
+        {name: 'Systolic Blood Pressure', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1032'},
+        {name: 'Current Tobacco Smoker', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.2390'}
+      ]);
+    });
+
+    it('should download value sets it does not have (by http URL and version)', function() {
+      return doDownloadTestWithAPIKey([
+        {name: 'Systolic Blood Pressure', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1032', version: '20170320'},
+        {name: 'Current Tobacco Smoker', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.2390', version: '20170320'}
+      ], true);
+    });
+
+    it('should download value sets it does not have (by http URL with embedded version)', function() {
+      return doDownloadTestWithAPIKey([
+        {name: 'Systolic Blood Pressure', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1032|20170320'},
+        {name: 'Current Tobacco Smoker', id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.2390|20170320'}
+      ], true);
+    });
+
+    const doDownloadTestWithAPIKey = (vsList, withVersion = false) => {
+      // Just to be sure, check length is only 2 (as expected)
+      Object.keys(service.valueSets).should.have.length(2);
+
+      const query1 = { id: '2.16.840.1.113883.3.526.3.1032', ticket: 'ST-TEST-1' };
+      const query2 = { id: '2.16.840.1.113883.3.600.2390', ticket: 'ST-TEST-2' };
+      if (withVersion) {
+        query1.version = '20170320';
+        query2.version = '20170320';
+      }
+      nock('https://vsac.nlm.nih.gov')
+      // Ticket granting ticket
+        .post('/vsac/ws/Ticket', { apikey: apiKey })
+        .reply(200, 'TGT-TEST')
+        // Service ticket and VS retrieval #1
+        .post('/vsac/ws/Ticket/TGT-TEST', { service: 'http://umlsks.nlm.nih.gov' })
+        .reply(200, 'ST-TEST-1')
+        .get('/vsac/svs/RetrieveValueSet')
+        .query(query1)
+        .replyWithFile(200, path.join(__dirname, 'fixtures', '2.16.840.1.113883.3.526.3.1032.xml'))
+        // Service ticket and VS retrieval #2
+        .post('/vsac/ws/Ticket/TGT-TEST', { service: 'http://umlsks.nlm.nih.gov' })
+        .reply(200, 'ST-TEST-2')
+        .get('/vsac/svs/RetrieveValueSet')
+        .query(query2)
+        .replyWithFile(200, path.join(__dirname, 'fixtures', '2.16.840.1.113883.3.600.2390.xml'));
+
+      return service.ensureValueSetsWithAPIKey(vsList, apiKey).then(function() {
         // Test that the value sets were properly loaded into memory
         service.valueSets.should.not.be.empty;
         Object.keys(service.valueSets).should.have.length(4);
@@ -663,6 +854,29 @@ describe('CodeService', function() {
         });
     });
 
+    it('should error if no API Key is supplied', function(){
+      const oldAPIKey = process.env['UMLS_API_KEY'];
+      try {
+        // Make sure env is clear so no username/password creeps through!
+        delete process.env['UMLS_API_KEY'];
+
+        nock('https://vsac.nlm.nih.gov');
+
+        const vsList = [
+          {name: 'Systolic Blood Pressure', id: '2.16.840.1.113883.3.526.3.1032', version: '20170320'}
+        ];
+        return service.ensureValueSetsWithAPIKey(vsList, null)
+          .then(function() {
+            should.fail(0, 1, 'This code should never be executed');
+          })
+          .catch(function(error) {
+            error.should.eql('Failed to download value sets since UMLS_API_KEY is not set.');
+          });
+      } finally {
+        process.env['UMLS_API_KEY'] = oldAPIKey;
+      }
+    });
+
     it('should error if invalid ticket granting ticket is supplied', function() {
       // Technically this should only happen if there is an issue w/ VSAC, but let's be sure we handle it
       nock('https://vsac.nlm.nih.gov')
@@ -677,6 +891,30 @@ describe('CodeService', function() {
         {name: 'Systolic Blood Pressure', id: '2.16.840.1.113883.3.526.3.1032', version: '20170320'}
       ];
       return service.ensureValueSets(vsList, username, password)
+        .then(function() {
+          should.fail(0, 1, 'This code should never be executed');
+        })
+        .catch(function(error) {
+          error.should.have.length(1);
+          error[0].should.be.an('error');
+          error[0].message.should.contain('2.16.840.1.113883.3.526.3.1032');
+        });
+    });
+
+    it('should error if invalid ticket granting ticket is supplied using API key functions', function() {
+      // Technically this should only happen if there is an issue w/ VSAC, but let's be sure we handle it
+      nock('https://vsac.nlm.nih.gov')
+      // Ticket granting ticket (invalid)
+        .post('/vsac/ws/Ticket', { apikey: apiKey })
+        .reply(200, 'TGT-INVALID-TEST')
+        // Simulate response to requesting service granting ticket w/ invalid ticket granting ticket
+        .post('/vsac/ws/Ticket/TGT-INVALID-TEST', { service: 'http://umlsks.nlm.nih.gov' })
+        .reply(401); // Unauthorized
+
+      const vsList = [
+        {name: 'Systolic Blood Pressure', id: '2.16.840.1.113883.3.526.3.1032', version: '20170320'}
+      ];
+      return service.ensureValueSetsWithAPIKey(vsList, apiKey)
         .then(function() {
           should.fail(0, 1, 'This code should never be executed');
         })
