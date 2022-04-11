@@ -850,7 +850,7 @@ describe('CodeService', function() {
           should.fail(0, 1, 'This code should never be executed');
         })
         .catch(function(error) {
-          error.statusCode.should.equal(401);
+          error.message.should.equal('401');
         });
     });
 
