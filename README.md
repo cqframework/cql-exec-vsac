@@ -37,8 +37,7 @@ account, you can request one here: https://uts.nlm.nih.gov/license.html
 To use this project, you should perform the following steps:
 
 1. Install [Node.js](https://nodejs.org/en/download/)
-2. Install [Yarn](https://yarnpkg.com/en/docs/install)
-3. Execute the following from this project's root directory: `yarn`
+2. Execute the following from this project's root directory: `npm install`
 
 # Using the VSAC Code Service
 
@@ -107,5 +106,5 @@ codeService.ensureValueSetsInLibrary(library, true, 'myUMLSUserName', 'myUMLSPas
 
 To encourage quality and consistency within the code base, all code should pass eslint without any warnings.  Many text editors can be configured to automatically flag eslint violations.  We also provide an npm script for running eslint on the project.  To run eslint, execute the following command:
 ```
-$ yarn lint
+$ npm run lint
 ```
