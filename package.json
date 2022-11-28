@@ -17,8 +17,7 @@
   "dependencies": {
     "debug": "^4.2.0",
     "mkdirp": "^1.0.4",
-    "request": "^2.88.2",
-    "request-promise-native": "^1.0.9",
+    "node-fetch": "^2.6.7",
     "xml2js": "^0.4.23"
   },
   "devDependencies": {
