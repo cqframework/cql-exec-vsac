@@ -1,9 +1,9 @@
-const {Code, ValueSet} = require('cql-execution');
+const { Code, ValueSet } = require('cql-execution');
 const fs = require('fs');
 const proc = require('process');
 const env = proc.env;
 const path = require('path');
-const {downloadFromVSAC,downloadFromVSACWithAPIKey} = require('./download-vsac');
+const { downloadFromVSAC, downloadFromVSACWithAPIKey } = require('./download-vsac');
 const extractOidAndVersion = require('./extractOidAndVersion');
 
 /**
@@ -44,14 +44,16 @@ class CodeService {
    */
   loadValueSetsFromFile(filePath) {
     filePath = path.resolve(filePath);
-    if (! fs.existsSync(filePath)) {
+    if (!fs.existsSync(filePath)) {
       return;
     }
     const json = JSON.parse(fs.readFileSync(filePath, 'utf8'));
     for (let oid in json) {
       let myOid = json[oid];
       for (let version in myOid) {
-        let myCodes = myOid[version].codes.map(elem => new Code(elem.code, elem.system, elem.version));
+        let myCodes = myOid[version].codes.map(
+          elem => new Code(elem.code, elem.system, elem.version)
+        );
         if (typeof this.valueSets[oid] === 'undefined') {
           this.valueSets[oid] = {};
         }
@@ -71,9 +73,16 @@ class CodeService {
    * @returns {Promise.<undefined,Error>} A promise that returns nothing when
    *   resolved and returns an error when rejected.
    */
-  ensureValueSets(valueSetList = [], umlsUserName = env['UMLS_USER_NAME'], umlsPassword = env['UMLS_PASSWORD'], caching = true) {
-    console.warn('WARNING! As of Jan 1 2021 VSAC will no longer accept accept username and password.  As such ' +
-      'ensureValueSets() has been deprecated, please use the new ensureValueSetsWithAPIKey() function instead!');
+  ensureValueSets(
+    valueSetList = [],
+    umlsUserName = env['UMLS_USER_NAME'],
+    umlsPassword = env['UMLS_PASSWORD'],
+    caching = true
+  ) {
+    console.warn(
+      'WARNING! As of Jan 1 2021 VSAC will no longer accept accept username and password.  As such ' +
+        'ensureValueSets() has been deprecated, please use the new ensureValueSetsWithAPIKey() function instead!'
+    );
     // First, filter out the value sets we already have
     const filteredVSList = valueSetList.filter(vs => {
       const result = this.findValueSet(vs.id, vs.version);
@@ -82,10 +91,24 @@ class CodeService {
     // Now download from VSAC if necessary
     if (filteredVSList.length == 0) {
       return Promise.resolve();
-    } else if ( typeof umlsUserName === 'undefined' || umlsUserName == null ||typeof umlsPassword === 'undefined' || umlsPassword == null) {
-      return Promise.reject('Failed to download value sets since UMLS_USER_NAME and/or UMLS_PASSWORD is not set.');
+    } else if (
+      typeof umlsUserName === 'undefined' ||
+      umlsUserName == null ||
+      typeof umlsPassword === 'undefined' ||
+      umlsPassword == null
+    ) {
+      return Promise.reject(
+        'Failed to download value sets since UMLS_USER_NAME and/or UMLS_PASSWORD is not set.'
+      );
     } else {
-      return downloadFromVSAC(umlsUserName, umlsPassword, filteredVSList, this.cache, this.valueSets, caching);
+      return downloadFromVSAC(
+        umlsUserName,
+        umlsPassword,
+        filteredVSList,
+        this.cache,
+        this.valueSets,
+        caching
+      );
     }
   }
   /**
@@ -106,10 +129,16 @@ class CodeService {
     // Now download from VSAC if necessary
     if (filteredVSList.length == 0) {
       return Promise.resolve();
-    } else if ( typeof umlsAPIKey === 'undefined' || umlsAPIKey == null) {
+    } else if (typeof umlsAPIKey === 'undefined' || umlsAPIKey == null) {
       return Promise.reject('Failed to download value sets since UMLS_API_KEY is not set.');
     } else {
-      return downloadFromVSACWithAPIKey(umlsAPIKey,filteredVSList, this.cache, this.valueSets, caching);
+      return downloadFromVSACWithAPIKey(
+        umlsAPIKey,
+        filteredVSList,
+        this.cache,
+        this.valueSets,
+        caching
+      );
     }
   }
 
@@ -124,9 +153,17 @@ class CodeService {
    * @param {string} umlsPassword - the UMLS password to use when downloading value sets (defaults to env "UMLS_PASSWORD")
    * @returns {Promise.<undefined,Error>} A promise that returns nothing when resolved and returns an error when rejected.
    */
-  ensureValueSetsInLibrary(library, checkIncluded = true, umlsUserName = env['UMLS_USER_NAME'], umlsPassword = env['UMLS_PASSWORD'], caching = true) {
-    console.warn('WARNING! As of Jan 1 2021 VSAC will no longer accept accept username and password.  As such ' +
-      'ensureValueSetsInLibrary() has been deprecated, please use the new ensureValueSetsInLibraryWithAPIKey() function instead!');
+  ensureValueSetsInLibrary(
+    library,
+    checkIncluded = true,
+    umlsUserName = env['UMLS_USER_NAME'],
+    umlsPassword = env['UMLS_PASSWORD'],
+    caching = true
+  ) {
+    console.warn(
+      'WARNING! As of Jan 1 2021 VSAC will no longer accept accept username and password.  As such ' +
+        'ensureValueSetsInLibrary() has been deprecated, please use the new ensureValueSetsInLibraryWithAPIKey() function instead!'
+    );
     const valueSets = extractSetOfValueSetsFromLibrary(library, checkIncluded);
     return this.ensureValueSets(Array.from(valueSets), umlsUserName, umlsPassword, caching);
   }
@@ -139,11 +176,15 @@ class CodeService {
    * @param {string} umlsAPIKey - the UMLS API Key to use when downloading value sets (defaults to env "UMLS_USER_NAME")
    * @returns {Promise.<undefined,Error>} A promise that returns nothing when resolved and returns an error when rejected.
    */
-  ensureValueSetsInLibraryWithAPIKey(library, checkIncluded = true, umlsAPIKey = env['UMLS_API_KEY'], caching = true) {
+  ensureValueSetsInLibraryWithAPIKey(
+    library,
+    checkIncluded = true,
+    umlsAPIKey = env['UMLS_API_KEY'],
+    caching = true
+  ) {
     const valueSets = extractSetOfValueSetsFromLibrary(library, checkIncluded);
     return this.ensureValueSetsWithAPIKey(Array.from(valueSets), umlsAPIKey, caching);
   }
-
 
   /**
    * The findValueSetsByOid function is kept for backwards compatibility (and since cql-execution
@@ -196,11 +237,10 @@ class CodeService {
     } else if (results.length === 1) {
       return results[0];
     } else {
-      return results.reduce(function(a, b) {
+      return results.reduce(function (a, b) {
         if (a.version > b.version) {
           return a;
-        }
-        else {
+        } else {
           return b;
         }
       });
@@ -215,12 +255,18 @@ class CodeService {
  * @param {Set} valueSets - the Set of valueSets extracted so far (defaults to empty set)
  * @returns {Set} the set of value sets referenced by the library
  */
-function extractSetOfValueSetsFromLibrary(library, extractFromIncluded = true, valueSets = new Set()) {
+function extractSetOfValueSetsFromLibrary(
+  library,
+  extractFromIncluded = true,
+  valueSets = new Set()
+) {
   // First add all the value sets from this library into the set
   Object.values(library.valuesets).forEach(vs => valueSets.add(vs));
   // Then, if requested, loop through the included libraries and add value sets from each of them
   if (extractFromIncluded && library.includes) {
-    Object.values(library.includes).forEach(included => extractSetOfValueSetsFromLibrary(included, extractFromIncluded, valueSets));
+    Object.values(library.includes).forEach(included =>
+      extractSetOfValueSetsFromLibrary(included, extractFromIncluded, valueSets)
+    );
   }
   return valueSets;
 }

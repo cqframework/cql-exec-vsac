@@ -6,15 +6,13 @@ const parseVSACXML = require('./parse-vsac');
 const extractOidAndVersion = require('./extractOidAndVersion');
 const debug = require('debug')('vsac'); // To turn on DEBUG: $ export DEBUG=vsac
 
-
-
 /*
  * @deprecated:  As of Jan 1 2021 VSAC will no longer accept accept username and password.
  * Please use downloadFromVSACWithAPIKey instead.
  */
-function downloadFromVSAC(username, password, input, output, vsDB={}, caching=true) {
+function downloadFromVSAC(username, password, input, output, vsDB = {}, caching = true) {
   const oidsAndVersions = [];
-  Object.keys(input).forEach((key) => {
+  Object.keys(input).forEach(key => {
     let [id, version] = [input[key].id, input[key].version];
     const [oid, embeddedVersion] = extractOidAndVersion(id);
     if (version == null && embeddedVersion != null) {
@@ -26,31 +24,38 @@ function downloadFromVSAC(username, password, input, output, vsDB={}, caching=tr
   });
   if (oidsAndVersions.length) {
     output = path.resolve(output);
-    if (caching && !fs.existsSync(output)){
+    if (caching && !fs.existsSync(output)) {
       mkdirp.sync(output);
     }
     return getTicketGrantingTicket(username, password)
-      .then((ticketGrantingTicket) => {
+      .then(ticketGrantingTicket => {
         const promises = oidsAndVersions.map(({ oid, version }) => {
-        // Catch errors and convert to resolutions returning an error.  This ensures Promise.all waits for all promises.
-        // See: http://stackoverflow.com/questions/31424561/wait-until-all-es6-promises-complete-even-rejected-promises
-          return downloadValueSet(ticketGrantingTicket, oid, version, output, vsDB, caching)
-            .catch((err) => {
+          // Catch errors and convert to resolutions returning an error.  This ensures Promise.all waits for all promises.
+          // See: http://stackoverflow.com/questions/31424561/wait-until-all-es6-promises-complete-even-rejected-promises
+          return downloadValueSet(ticketGrantingTicket, oid, version, output, vsDB, caching).catch(
+            err => {
               debug(`Error downloading valueset ${oid}${version || ''}`, err);
               return new Error(`Error downloading valueset: ${oid}${version || ''}`);
-            });
+            }
+          );
         });
         return Promise.all(promises);
       })
-      .then((results) => {
+      .then(results => {
         const errors = results.filter(r => r instanceof Error);
         if (results.length - errors.length > 0) {
-        // There were results, so write the file first before resolving/rejecting
-          return writeFile(path.join(output, 'valueset-db.json'), JSON.stringify(vsDB, null, 2), caching)
-            .then(
-              (result) => errors.length == 0 ? result : Promise.reject(errors),
-              (err) => { errors.push(err); return Promise.reject(errors); }
-            );
+          // There were results, so write the file first before resolving/rejecting
+          return writeFile(
+            path.join(output, 'valueset-db.json'),
+            JSON.stringify(vsDB, null, 2),
+            caching
+          ).then(
+            result => (errors.length == 0 ? result : Promise.reject(errors)),
+            err => {
+              errors.push(err);
+              return Promise.reject(errors);
+            }
+          );
         }
         if (errors.length > 0) {
           return Promise.reject(errors);
@@ -61,9 +66,9 @@ function downloadFromVSAC(username, password, input, output, vsDB={}, caching=tr
   }
 }
 
-function downloadFromVSACWithAPIKey(apiKey, input, output, vsDB={}, caching=true){
+function downloadFromVSACWithAPIKey(apiKey, input, output, vsDB = {}, caching = true) {
   const oidsAndVersions = [];
-  Object.keys(input).forEach((key) => {
+  Object.keys(input).forEach(key => {
     let [id, version] = [input[key].id, input[key].version];
     const [oid, embeddedVersion] = extractOidAndVersion(id);
     if (version == null && embeddedVersion != null) {
@@ -75,31 +80,38 @@ function downloadFromVSACWithAPIKey(apiKey, input, output, vsDB={}, caching=true
   });
   if (oidsAndVersions.length) {
     output = path.resolve(output);
-    if (caching && !fs.existsSync(output)){
+    if (caching && !fs.existsSync(output)) {
       mkdirp.sync(output);
     }
     return getTicketGrantingTicketWithAPIKey(apiKey)
-      .then((ticketGrantingTicket) => {
+      .then(ticketGrantingTicket => {
         const promises = oidsAndVersions.map(({ oid, version }) => {
           // Catch errors and convert to resolutions returning an error.  This ensures Promise.all waits for all promises.
           // See: http://stackoverflow.com/questions/31424561/wait-until-all-es6-promises-complete-even-rejected-promises
-          return downloadValueSet(ticketGrantingTicket, oid, version, output, vsDB, caching)
-            .catch((err) => {
+          return downloadValueSet(ticketGrantingTicket, oid, version, output, vsDB, caching).catch(
+            err => {
               debug(`Error downloading valueset ${oid}${version || ''}`, err);
               return new Error(`Error downloading valueset: ${oid}${version || ''}`);
-            });
+            }
+          );
         });
         return Promise.all(promises);
       })
-      .then((results) => {
+      .then(results => {
         const errors = results.filter(r => r instanceof Error);
         if (results.length - errors.length > 0) {
           // There were results, so write the file first before resolving/rejecting
-          return writeFile(path.join(output, 'valueset-db.json'), JSON.stringify(vsDB, null, 2), caching)
-            .then(
-              (result) => errors.length == 0 ? result : Promise.reject(errors),
-              (err) => { errors.push(err); return Promise.reject(errors); }
-            );
+          return writeFile(
+            path.join(output, 'valueset-db.json'),
+            JSON.stringify(vsDB, null, 2),
+            caching
+          ).then(
+            result => (errors.length == 0 ? result : Promise.reject(errors)),
+            err => {
+              errors.push(err);
+              return Promise.reject(errors);
+            }
+          );
         }
         if (errors.length > 0) {
           return Promise.reject(errors);
@@ -121,7 +133,7 @@ function getTicketGrantingTicket(username, password) {
   params.append('password', password);
   const options = {
     method: 'POST',
-    body: params,
+    body: params
   };
   return fetch('https://vsac.nlm.nih.gov/vsac/ws/Ticket', options).then(res => {
     if (!res.ok) {
@@ -131,13 +143,13 @@ function getTicketGrantingTicket(username, password) {
   });
 }
 
-function getTicketGrantingTicketWithAPIKey(apiKey){
+function getTicketGrantingTicketWithAPIKey(apiKey) {
   debug('Getting TGT');
   const params = new URLSearchParams();
   params.append('apikey', apiKey);
   const options = {
     method: 'POST',
-    body: params,
+    body: params
   };
   return fetch('https://vsac.nlm.nih.gov/vsac/ws/Ticket', options).then(res => {
     if (!res.ok) {
@@ -147,12 +159,12 @@ function getTicketGrantingTicketWithAPIKey(apiKey){
   });
 }
 
-function downloadValueSet(ticketGrantingTicket, oid, version, output, vsDB={}, caching=true) {
-  return  getServiceTicket(ticketGrantingTicket)
-    .then((serviceTicket) => {
+function downloadValueSet(ticketGrantingTicket, oid, version, output, vsDB = {}, caching = true) {
+  return getServiceTicket(ticketGrantingTicket)
+    .then(serviceTicket => {
       return getValueSet(serviceTicket, oid, version);
     })
-    .then((data) => {
+    .then(data => {
       parseVSACXML(data, vsDB);
       return writeFile(path.join(output, `${oid}.xml`), data, caching);
     });
@@ -164,14 +176,16 @@ function getServiceTicket(ticketGrantingTicket) {
   params.append('service', 'http://umlsks.nlm.nih.gov');
   const options = {
     method: 'POST',
-    body: params,
+    body: params
   };
-  return fetch(`https://vsac.nlm.nih.gov/vsac/ws/Ticket/${ticketGrantingTicket}`, options).then(res => {
-    if (!res.ok) {
-      throw new Error(res.status);
+  return fetch(`https://vsac.nlm.nih.gov/vsac/ws/Ticket/${ticketGrantingTicket}`, options).then(
+    res => {
+      if (!res.ok) {
+        throw new Error(res.status);
+      }
+      return res.text();
     }
-    return res.text();
-  });
+  );
 }
 
 function getValueSet(serviceTicket, oid, version) {
@@ -190,11 +204,11 @@ function getValueSet(serviceTicket, oid, version) {
   });
 }
 
-function writeFile(file, data, caching=true) {
+function writeFile(file, data, caching = true) {
   return new Promise((resolve, reject) => {
     if (caching) {
       debug('Writing:', file);
-      fs.writeFile(file, data, (err) => {
+      fs.writeFile(file, data, err => {
         if (typeof err !== 'undefined' && err != null) {
           debug('Error writing file', file);
           reject(err);
@@ -209,4 +223,4 @@ function writeFile(file, data, caching=true) {
   });
 }
 
-module.exports = {downloadFromVSAC,downloadFromVSACWithAPIKey};
+module.exports = { downloadFromVSAC, downloadFromVSACWithAPIKey };

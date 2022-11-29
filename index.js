@@ -1,1 +1,1 @@
-module.exports = require('./lib/CodeService.js');
+module.exports = require('./src/CodeService.js');
