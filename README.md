@@ -75,9 +75,9 @@ OIDs / versions that will be needed.
 
 ## Breaking Changes in Version 2.0.0
 
-Version 2.0.0 of the code service removes the old `ensureValueSets` and `ensureValueSetsinLibrary` methods that
+Version 2.0.0 of the code service removes the old `ensureValueSets` and `ensureValueSetsInLibrary` methods that
 accepted a UMLS user name and password. As of Jan 1, 2021, VSAC no longer allows API authentication using username and
-password. Instead, implementations should now use `ensureValueSetsWithAPIKey` and `ensureValueSetsinLibraryWithApiKey`,
+password. Instead, implementations should now use `ensureValueSetsWithAPIKey` and `ensureValueSetsInLibraryWithApiKey`,
 each of which allows an API key to be passed in (or to be specified via the `UMLS_API_KEY` environment variables).
 
 In addition, version 2.0.0 switched its communication library from [request](https://www.npmjs.com/package/request)
@@ -86,7 +86,7 @@ errors may have a different format since they are thrown by _node-fetch_ rather 
 
 ## Example
 
-The following is a simple example of setting up the VSAC Code Service, calling `ensureValueSetsinLibraryWithApiKey`,
+The following is a simple example of setting up the VSAC Code Service, calling `ensureValueSetsInLibraryWithApiKey`,
 and passing the Code Service into the CQL Execution engine:
 
 ```js
@@ -98,7 +98,7 @@ const vsac = require('cql-exec-vsac');
 // Set up the code service, loading from the cache if it exists
 const codeService = new vsac.CodeService('/path/to/vsac_cache', true);
 // Ensure value sets in the library and its dependencies, downloading any missing value sets
-codeService.ensureValueSetsinLibraryWithApiKey(library, true, 'myUmlsApiKey')
+codeService.ensureValueSetsInLibraryWithApiKey(library, true, 'myUmlsApiKey')
 .then(() => {
   // Value sets are loaded, so execute!
   const executor = new cql.Executor(lib, codeService, parameters);
