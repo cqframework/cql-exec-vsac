@@ -3,7 +3,7 @@ const fs = require('fs');
 const proc = require('process');
 const env = proc.env;
 const path = require('path');
-const { downloadFromVSAC, downloadFromVSACWithAPIKey } = require('./download-vsac');
+const { downloadFromVSACWithAPIKey } = require('./download-vsac');
 const extractOidAndVersion = require('./extractOidAndVersion');
 
 /**
@@ -66,55 +66,6 @@ class CodeService {
    * Given a list of value set references, will ensure that each has a local
    * definition.  If a local definition does not exist, the value set will
    * be downloaded using the VSAC API.
-   * @deprecated As of Jan 1 2021 VSAC will no longer accept accept username and password.
-   *   Please use ensureValueSetsWithAPIKey() instead.
-   * @param {Object} valueSetList - an array of objects, each containing "name"
-   *   and "id" properties, with an optional "version" property
-   * @returns {Promise.<undefined,Error>} A promise that returns nothing when
-   *   resolved and returns an error when rejected.
-   */
-  ensureValueSets(
-    valueSetList = [],
-    umlsUserName = env['UMLS_USER_NAME'],
-    umlsPassword = env['UMLS_PASSWORD'],
-    caching = true
-  ) {
-    console.warn(
-      'WARNING! As of Jan 1 2021 VSAC will no longer accept accept username and password.  As such ' +
-        'ensureValueSets() has been deprecated, please use the new ensureValueSetsWithAPIKey() function instead!'
-    );
-    // First, filter out the value sets we already have
-    const filteredVSList = valueSetList.filter(vs => {
-      const result = this.findValueSet(vs.id, vs.version);
-      return typeof result === 'undefined';
-    });
-    // Now download from VSAC if necessary
-    if (filteredVSList.length == 0) {
-      return Promise.resolve();
-    } else if (
-      typeof umlsUserName === 'undefined' ||
-      umlsUserName == null ||
-      typeof umlsPassword === 'undefined' ||
-      umlsPassword == null
-    ) {
-      return Promise.reject(
-        'Failed to download value sets since UMLS_USER_NAME and/or UMLS_PASSWORD is not set.'
-      );
-    } else {
-      return downloadFromVSAC(
-        umlsUserName,
-        umlsPassword,
-        filteredVSList,
-        this.cache,
-        this.valueSets,
-        caching
-      );
-    }
-  }
-  /**
-   * Given a list of value set references, will ensure that each has a local
-   * definition.  If a local definition does not exist, the value set will
-   * be downloaded using the VSAC API.
    * @param {Object} valueSetList - an array of objects, each containing "name"
    *   and "id" properties, with an optional "version" property
    * @returns {Promise.<undefined,Error>} A promise that returns nothing when
@@ -145,35 +96,9 @@ class CodeService {
   /**
    * Given a library, will detect referenced value sets and ensure that each has a local definition.  If a local definition
    * does not exist, the value set will be downloaded using the VSAC API.
-   * @deprecated As of Jan 1 2021 VSAC will no longer accept accept username and password. Please use
-   *   ensureValueSetsInLibraryWithAPIKey() instead.
    * @param {Object} library - the CQL Library object to look for referenced value sets in
    * @param {boolean} checkIncluded - indicates if "included" libraries should also be checked
-   * @param {string} umlsUserName - the UMLS username to use when downloading value sets (defaults to env "UMLS_USER_NAME")
-   * @param {string} umlsPassword - the UMLS password to use when downloading value sets (defaults to env "UMLS_PASSWORD")
-   * @returns {Promise.<undefined,Error>} A promise that returns nothing when resolved and returns an error when rejected.
-   */
-  ensureValueSetsInLibrary(
-    library,
-    checkIncluded = true,
-    umlsUserName = env['UMLS_USER_NAME'],
-    umlsPassword = env['UMLS_PASSWORD'],
-    caching = true
-  ) {
-    console.warn(
-      'WARNING! As of Jan 1 2021 VSAC will no longer accept accept username and password.  As such ' +
-        'ensureValueSetsInLibrary() has been deprecated, please use the new ensureValueSetsInLibraryWithAPIKey() function instead!'
-    );
-    const valueSets = extractSetOfValueSetsFromLibrary(library, checkIncluded);
-    return this.ensureValueSets(Array.from(valueSets), umlsUserName, umlsPassword, caching);
-  }
-
-  /**
-   * Given a library, will detect referenced value sets and ensure that each has a local definition.  If a local definition
-   * does not exist, the value set will be downloaded using the VSAC API.
-   * @param {Object} library - the CQL Library object to look for referenced value sets in
-   * @param {boolean} checkIncluded - indicates if "included" libraries should also be checked
-   * @param {string} umlsAPIKey - the UMLS API Key to use when downloading value sets (defaults to env "UMLS_USER_NAME")
+   * @param {string} umlsAPIKey - the UMLS API Key to use when downloading value sets
    * @returns {Promise.<undefined,Error>} A promise that returns nothing when resolved and returns an error when rejected.
    */
   ensureValueSetsInLibraryWithAPIKey(

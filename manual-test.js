@@ -9,11 +9,7 @@ const VALUESET = {
 };
 
 async function main() {
-  if (
-    env['UMLS_USER_NAME'] == null &&
-    env['UMLS_PASSWORD'] == null &&
-    env['UMLS_API_KEY'] == null
-  ) {
+  if (env['UMLS_API_KEY'] == null) {
     console.error('This test requires you to set the UMLS_API_KEY environment variable');
     process.exit(1);
   }
