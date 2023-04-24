@@ -111,6 +111,13 @@ codeService.ensureValueSetsInLibraryWithApiKey(library, true, 'myUmlsApiKey')
 });
 ```
 
+# Testing the Code
+
+To run the automated unit tests, execute the following command:
+```
+$ npm test
+```
+
 # Linting the Code
 
 To encourage quality and consistency within the code base, all code should pass eslint without any warnings.  Many text editors can be configured to automatically flag eslint violations.  We also provide an npm script for running eslint on the project.  To check your code against eslint's rules, execute the following command:
@@ -118,7 +125,7 @@ To encourage quality and consistency within the code base, all code should pass 
 $ npm run lint
 ```
 
-To fix any code that violates eslint's rules:
+To automatically fix code that violates eslint's rules:
 ```
 $ npm run lint:fix
 ```
@@ -130,7 +137,14 @@ To encourage quality and consistency within the code base, all code should also 
 $ npm run prettier
 ```
 
-To fix any code that violates Prettier's rules:
+To automatically fix any code that violates Prettier's rules:
 ```
 $ npm run prettier:fix
+```
+
+# Altogether Now!
+
+To run the unit tests, linter, and prettier all in one shot, execute the following command:
+```
+$ npm run test:plus
 ```
