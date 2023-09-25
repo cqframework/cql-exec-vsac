@@ -726,35 +726,24 @@ describe('CodeService', function () {
       Object.keys(service.valueSets).should.have.length(2);
 
       const query1 = {
-        id: '2.16.840.1.113883.3.526.3.1032',
-        ticket: 'ST-TEST-1'
+        id: '2.16.840.1.113883.3.526.3.1032'
       };
       const query2 = {
-        id: '2.16.840.1.113883.3.600.2390',
-        ticket: 'ST-TEST-2'
+        id: '2.16.840.1.113883.3.600.2390'
       };
       if (withVersion) {
         query1.version = '20170320';
         query2.version = '20170320';
       }
       nock('https://vsac.nlm.nih.gov')
-        // Ticket granting ticket
-        .post('/vsac/ws/Ticket', { apikey: apiKey })
-        .reply(200, 'TGT-TEST')
-        // Service ticket and VS retrieval #1
-        .post('/vsac/ws/Ticket/TGT-TEST', {
-          service: 'http://umlsks.nlm.nih.gov'
-        })
-        .reply(200, 'ST-TEST-1')
+        // VS retrieval #1
         .get('/vsac/svs/RetrieveValueSet')
+        .basicAuth({ user: 'apikey', pass: apiKey })
         .query(query1)
         .replyWithFile(200, path.join(__dirname, 'fixtures', '2.16.840.1.113883.3.526.3.1032.xml'))
-        // Service ticket and VS retrieval #2
-        .post('/vsac/ws/Ticket/TGT-TEST', {
-          service: 'http://umlsks.nlm.nih.gov'
-        })
-        .reply(200, 'ST-TEST-2')
+        // VS retrieval #2
         .get('/vsac/svs/RetrieveValueSet')
+        .basicAuth({ user: 'apikey', pass: apiKey })
         .query(query2)
         .replyWithFile(200, path.join(__dirname, 'fixtures', '2.16.840.1.113883.3.600.2390.xml'));
 
@@ -777,31 +766,20 @@ describe('CodeService', function () {
       Object.keys(service.valueSets).should.have.length(2);
 
       nock('https://vsac.nlm.nih.gov')
-        // Ticket granting ticket
-        .post('/vsac/ws/Ticket', { apikey: apiKey })
-        .reply(200, 'TGT-TEST')
-        // Service ticket and VS retrieval #1
-        .post('/vsac/ws/Ticket/TGT-TEST', {
-          service: 'http://umlsks.nlm.nih.gov'
-        })
-        .reply(200, 'ST-TEST-1')
+        // VS retrieval #1
         .get('/vsac/svs/RetrieveValueSet')
+        .basicAuth({ user: 'apikey', pass: apiKey })
         .query({
           id: '1.2.3.4.5.6.7.8.9.10',
-          version: '20170320',
-          ticket: 'ST-TEST-1'
+          version: '20170320'
         })
         .reply(404) // Not Found
-        // Service ticket and VS retrieval #2
-        .post('/vsac/ws/Ticket/TGT-TEST', {
-          service: 'http://umlsks.nlm.nih.gov'
-        })
-        .reply(200, 'ST-TEST-2')
+        // VS retrieval #2
         .get('/vsac/svs/RetrieveValueSet')
+        .basicAuth({ user: 'apikey', pass: apiKey })
         .query({
           id: '2.16.840.1.113883.3.600.2390',
-          version: '20170320',
-          ticket: 'ST-TEST-2'
+          version: '20170320'
         })
         .replyWithFile(200, path.join(__dirname, 'fixtures', '2.16.840.1.113883.3.600.2390.xml'));
 
@@ -869,88 +847,12 @@ describe('CodeService', function () {
       }
     });
 
-    it('should error if invalid ticket granting ticket is supplied using API key functions', function () {
-      // Technically this should only happen if there is an issue w/ VSAC, but let's be sure we handle it
-      nock('https://vsac.nlm.nih.gov')
-        // Ticket granting ticket (invalid)
-        .post('/vsac/ws/Ticket', { apikey: apiKey })
-        .reply(200, 'TGT-INVALID-TEST')
-        // Simulate response to requesting service granting ticket w/ invalid ticket granting ticket
-        .post('/vsac/ws/Ticket/TGT-INVALID-TEST', {
-          service: 'http://umlsks.nlm.nih.gov'
-        })
-        .reply(401); // Unauthorized
-
-      const vsList = [
-        {
-          name: 'Systolic Blood Pressure',
-          id: '2.16.840.1.113883.3.526.3.1032',
-          version: '20170320'
-        }
-      ];
-      return service
-        .ensureValueSetsWithAPIKey(vsList, apiKey)
-        .then(function () {
-          should.fail(0, 1, 'This code should never be executed');
-        })
-        .catch(function (error) {
-          error.should.have.length(1);
-          error[0].should.be.an('error');
-          error[0].message.should.contain('2.16.840.1.113883.3.526.3.1032');
-        });
-    });
-
-    it('should error if invalid service granting ticket is supplied', function () {
-      // Technically this should only happen if there is an issue w/ VSAC, but let's be sure we handle it
-      nock('https://vsac.nlm.nih.gov')
-        // Ticket granting ticket
-        .post('/vsac/ws/Ticket', { apikey: apiKey })
-        .reply(200, 'TGT-TEST')
-        // Service ticket (invalid)
-        .post('/vsac/ws/Ticket/TGT-TEST', {
-          service: 'http://umlsks.nlm.nih.gov'
-        })
-        .reply(200, 'ST-INVALID-TEST')
-        // Simulate response to requesting value set w/ invalid service granting ticket
-        .get('/vsac/svs/RetrieveValueSet')
-        .query({
-          id: '2.16.840.1.113883.3.526.3.1032',
-          version: '20170320',
-          ticket: 'ST-INVALID-TEST'
-        })
-        .reply(401, 'Unauthorized'); // This is the only one that puts 'Unauthorized' in the body
-
-      const vsList = [
-        {
-          name: 'Systolic Blood Pressure',
-          id: '2.16.840.1.113883.3.526.3.1032',
-          version: '20170320'
-        }
-      ];
-      return service
-        .ensureValueSetsWithAPIKey(vsList, apiKey)
-        .then(function () {
-          should.fail(0, 1, 'This code should never be executed');
-        })
-        .catch(function (error) {
-          error.should.have.length(1);
-          error[0].should.be.an('error');
-          error[0].message.should.contain('2.16.840.1.113883.3.526.3.1032');
-        });
-    });
-
     it('should error if value set is not found', function () {
       // Technically this should only happen if there is an issue w/ VSAC, but let's be sure we handle it
       nock('https://vsac.nlm.nih.gov')
-        // Ticket granting ticket
-        .post('/vsac/ws/Ticket', { apikey: apiKey })
-        .reply(200, 'TGT-TEST')
-        // Service ticket and VS retrieval #1
-        .post('/vsac/ws/Ticket/TGT-TEST', {
-          service: 'http://umlsks.nlm.nih.gov'
-        })
-        .reply(200, 'ST-TEST')
+        // VS retrieval #1
         .get('/vsac/svs/RetrieveValueSet')
+        .basicAuth({ user: 'apikey', pass: apiKey })
         .query({
           id: '1.2.3.4.5.6.7.8.9.10',
           version: '20170320',
