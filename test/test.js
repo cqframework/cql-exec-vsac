@@ -847,6 +847,37 @@ describe('CodeService', function () {
       }
     });
 
+    it('should error if invalid API Key is supplied', function () {
+      // Technically this should only happen if there is an issue w/ VSAC, but let's be sure we handle it
+      nock('https://vsac.nlm.nih.gov')
+        // VS retrieval #1
+        .get('/vsac/svs/RetrieveValueSet')
+        .basicAuth({ user: 'apikey', pass: 'wrongkey' })
+        .query({
+          id: '2.16.840.1.113883.3.526.3.1032',
+          version: '20170320'
+        })
+        .reply(401, 'Unauthorized');
+
+      const vsList = [
+        {
+          name: 'Systolic Blood Pressure',
+          id: '2.16.840.1.113883.3.526.3.1032',
+          version: '20170320'
+        }
+      ];
+      return service
+        .ensureValueSetsWithAPIKey(vsList, 'wrongkey')
+        .then(function () {
+          should.fail(0, 1, 'This code should never be executed');
+        })
+        .catch(function (error) {
+          error.should.have.length(1);
+          error[0].should.be.an('error');
+          error[0].message.should.contain('2.16.840.1.113883.3.526.3.1032');
+        });
+    });
+
     it('should error if value set is not found', function () {
       // Technically this should only happen if there is an issue w/ VSAC, but let's be sure we handle it
       nock('https://vsac.nlm.nih.gov')
@@ -855,8 +886,7 @@ describe('CodeService', function () {
         .basicAuth({ user: 'apikey', pass: apiKey })
         .query({
           id: '1.2.3.4.5.6.7.8.9.10',
-          version: '20170320',
-          ticket: 'ST-TEST'
+          version: '20170320'
         })
         .reply(404); // Not Found
 
