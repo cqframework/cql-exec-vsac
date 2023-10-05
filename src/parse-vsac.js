@@ -42,11 +42,9 @@ function parseVSACXML(xmlString, vsDB = {}) {
   }
 
   // Format according to the current valueset db JSON.
-  const result = {};
-  result[vsOID] = vsDB[vsOID] = {};
+  vsDB[vsOID] = {};
   let myCodes = codeList.map(elem => new Code(elem.code, elem.system, elem.version));
-  result[vsOID][vsVersion] = vsDB[vsOID][vsVersion] = new ValueSet(vsOID, vsVersion, myCodes);
-  return result;
+  vsDB[vsOID][vsVersion] = new ValueSet(vsOID, vsVersion, myCodes);
 }
 
 module.exports = parseVSACXML;

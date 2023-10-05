@@ -2,9 +2,9 @@ const fs = require('fs');
 const path = require('path');
 const fetch = require('node-fetch');
 const mkdirp = require('mkdirp');
-const parseVSACXML = require('./parse-vsac');
-const extractOidAndVersion = require('./extractOidAndVersion');
 const debug = require('debug')('vsac'); // To turn on DEBUG: $ export DEBUG=vsac
+const { Code, ValueSet } = require('cql-execution');
+const extractOidAndVersion = require('./extractOidAndVersion');
 
 function downloadFromVSACWithAPIKey(apiKey, input, output, vsDB = {}, caching = true) {
   const oidsAndVersions = [];
@@ -41,11 +41,7 @@ function downloadFromVSACWithAPIKey(apiKey, input, output, vsDB = {}, caching = 
       const errors = results.filter(r => r instanceof Error);
       if (results.length - errors.length > 0) {
         // There were results, so write the file first before resolving/rejecting
-        return writeFile(
-          path.join(output, 'valueset-db.json'),
-          JSON.stringify(vsDB, null, 2),
-          caching
-        ).then(
+        return writeFile(path.join(output, 'valueset-db.json'), vsDB, caching).then(
           result => (errors.length == 0 ? result : Promise.reject(errors)),
           err => {
             errors.push(err);
@@ -63,38 +59,68 @@ function downloadFromVSACWithAPIKey(apiKey, input, output, vsDB = {}, caching = 
 }
 
 function downloadValueSet(apiKey, oid, version, output, vsDB = {}, caching = true) {
-  return getValueSet(apiKey, oid, version).then(data => {
-    parseVSACXML(data, vsDB);
-    return writeFile(path.join(output, `${oid}.xml`), data, caching);
+  return getValueSetPages(apiKey, oid, version).then(pages => {
+    if (pages == null || pages.length === 0) {
+      return;
+    }
+
+    const { id, version } = pages[0];
+    const codes = [];
+    pages.forEach(page => {
+      if (page.expansion && page.expansion.contains) {
+        codes.push(...page.expansion.contains.map(c => new Code(c.code, c.system, c.version)));
+      }
+    });
+    vsDB[id] = {};
+    vsDB[id][version] = new ValueSet(id, version, codes);
+    return writeFile(path.join(output, `${oid}.json`), pages, caching);
   });
 }
 
-function getValueSet(apiKey, oid, version) {
-  debug(`Getting ValueSet: ${oid}${version || ''}`);
-  const params = new URLSearchParams({ id: oid });
-  if (version != null) {
-    params.append('version', version);
-  }
+function getValueSetPages(apiKey, oid, version, offset = 0) {
+  return getValueSet(apiKey, oid, version, offset).then(page => {
+    if (page && page.expansion) {
+      const pTotal = page.expansion.total;
+      const pOffset = page.expansion.offset;
+      const pLength = page.expansion.contains && page.expansion.contains.length;
+      if (pTotal != null && pOffset != null && pLength != null && pTotal > pOffset + pLength) {
+        // Fetch and append the remaining value set pages
+        return getValueSetPages(apiKey, oid, version, offset + pLength).then(pages => {
+          return [page, ...pages];
+        });
+      } else {
+        return [page];
+      }
+    }
+  });
+}
+
+function getValueSet(apiKey, oid, version, offset = 0) {
+  debug(`Getting ValueSet: ${oid}${version || ''} (offset: ${offset})`);
   const options = {
     headers: {
       Authorization: `Basic ${Buffer.from(`apikey:${apiKey}`).toString('base64')}`
     }
   };
-  return fetch(`https://vsac.nlm.nih.gov/vsac/svs/RetrieveValueSet?${params}`, options).then(
-    res => {
-      if (!res.ok) {
-        throw new Error(res.status);
-      }
-      return res.text();
+
+  const params = new URLSearchParams({ offset });
+  if (version != null) {
+    params.set('valueSetVersion', version);
+  }
+  const url = `https://cts.nlm.nih.gov/fhir/ValueSet/${oid}/$expand?${params}`;
+  return fetch(url, options).then(res => {
+    if (!res.ok) {
+      throw new Error(res.status);
     }
-  );
+    return res.json();
+  });
 }
 
 function writeFile(file, data, caching = true) {
   return new Promise((resolve, reject) => {
     if (caching) {
       debug('Writing:', file);
-      fs.writeFile(file, data, err => {
+      fs.writeFile(file, JSON.stringify(data, null, 2), err => {
         if (typeof err !== 'undefined' && err != null) {
           debug('Error writing file', file);
           reject(err);
@@ -109,4 +135,4 @@ function writeFile(file, data, caching = true) {
   });
 }
 
-module.exports = { name: 'SVS', downloadFromVSACWithAPIKey };
+module.exports = { name: 'FHIR', downloadFromVSACWithAPIKey };

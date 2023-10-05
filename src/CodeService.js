@@ -3,7 +3,8 @@ const fs = require('fs');
 const proc = require('process');
 const env = proc.env;
 const path = require('path');
-const { downloadFromVSACWithAPIKey } = require('./download-vsac');
+const svs = require('./download-vsac');
+const fhir = require('./fhir');
 const extractOidAndVersion = require('./extractOidAndVersion');
 
 /**
@@ -13,7 +14,9 @@ const extractOidAndVersion = require('./extractOidAndVersion');
  * @param {boolean=false} loadFromCache - if true, and the cache exists, will initialize itself with the JSON DB
  */
 class CodeService {
-  constructor(vsacCache, loadFromCache = false) {
+  constructor(vsacCache, loadFromCache = false, useFHIR = false) {
+    this.api = useFHIR ? fhir : svs;
+
     // Initialize the local in-memory "database"
     this.valueSets = {}; // This will just be an object of objects.
 
@@ -83,7 +86,7 @@ class CodeService {
     } else if (typeof umlsAPIKey === 'undefined' || umlsAPIKey == null) {
       return Promise.reject('Failed to download value sets since UMLS_API_KEY is not set.');
     } else {
-      return downloadFromVSACWithAPIKey(
+      return this.api.downloadFromVSACWithAPIKey(
         umlsAPIKey,
         filteredVSList,
         this.cache,
