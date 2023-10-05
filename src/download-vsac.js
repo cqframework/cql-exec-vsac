@@ -23,81 +23,59 @@ function downloadFromVSACWithAPIKey(apiKey, input, output, vsDB = {}, caching = 
     if (caching && !fs.existsSync(output)) {
       mkdirp.sync(output);
     }
-    return getTicketGrantingTicketWithAPIKey(apiKey)
-      .then(ticketGrantingTicket => {
-        const promises = oidsAndVersions.map(({ oid, version }) => {
-          // Catch errors and convert to resolutions returning an error.  This ensures Promise.all waits for all promises.
-          // See: http://stackoverflow.com/questions/31424561/wait-until-all-es6-promises-complete-even-rejected-promises
-          return downloadValueSet(ticketGrantingTicket, oid, version, output, vsDB, caching).catch(
-            err => {
-              debug(`Error downloading valueset ${oid}${version || ''}`, err);
-              return new Error(`Error downloading valueset: ${oid}${version || ''}`);
-            }
-          );
-        });
-        return Promise.all(promises);
-      })
-      .then(results => {
-        const errors = results.filter(r => r instanceof Error);
-        if (results.length - errors.length > 0) {
-          // There were results, so write the file first before resolving/rejecting
-          return writeFile(
-            path.join(output, 'valueset-db.json'),
-            JSON.stringify(vsDB, null, 2),
-            caching
-          ).then(
-            result => (errors.length == 0 ? result : Promise.reject(errors)),
-            err => {
-              errors.push(err);
-              return Promise.reject(errors);
-            }
-          );
-        }
-        if (errors.length > 0) {
-          return Promise.reject(errors);
-        }
+
+    const promises = oidsAndVersions.map(({ oid, version }) => {
+      // Catch errors and convert to resolutions returning an error.  This ensures Promise.all waits for all promises.
+      // See: http://stackoverflow.com/questions/31424561/wait-until-all-es6-promises-complete-even-rejected-promises
+      return downloadValueSet(apiKey, oid, version, output, vsDB, caching).catch(err => {
+        debug(`Error downloading valueset ${oid}${version || ''}`, err);
+        return new Error(`Error downloading valueset: ${oid}${version || ''}`);
       });
+    });
+    return Promise.all(promises).then(results => {
+      const errors = results.filter(r => r instanceof Error);
+      if (results.length - errors.length > 0) {
+        // There were results, so write the file first before resolving/rejecting
+        return writeFile(
+          path.join(output, 'valueset-db.json'),
+          JSON.stringify(vsDB, null, 2),
+          caching
+        ).then(
+          result => (errors.length == 0 ? result : Promise.reject(errors)),
+          err => {
+            errors.push(err);
+            return Promise.reject(errors);
+          }
+        );
+      }
+      if (errors.length > 0) {
+        return Promise.reject(errors);
+      }
+    });
   } else {
     return Promise.resolve();
   }
 }
 
-function getTicketGrantingTicketWithAPIKey(apiKey) {
-  debug('Getting TGT');
-  const params = new URLSearchParams();
-  params.append('apikey', apiKey);
-  const options = {
-    method: 'POST',
-    body: params
-  };
-  return fetch('https://vsac.nlm.nih.gov/vsac/ws/Ticket', options).then(res => {
-    if (!res.ok) {
-      throw new Error(res.status);
-    }
-    return res.text();
+function downloadValueSet(apiKey, oid, version, output, vsDB = {}, caching = true) {
+  return getValueSet(apiKey, oid, version).then(data => {
+    parseVSACXML(data, vsDB);
+    return writeFile(path.join(output, `${oid}.xml`), data, caching);
   });
 }
 
-function downloadValueSet(ticketGrantingTicket, oid, version, output, vsDB = {}, caching = true) {
-  return getServiceTicket(ticketGrantingTicket)
-    .then(serviceTicket => {
-      return getValueSet(serviceTicket, oid, version);
-    })
-    .then(data => {
-      parseVSACXML(data, vsDB);
-      return writeFile(path.join(output, `${oid}.xml`), data, caching);
-    });
-}
-
-function getServiceTicket(ticketGrantingTicket) {
-  debug('Getting ST');
-  const params = new URLSearchParams();
-  params.append('service', 'http://umlsks.nlm.nih.gov');
+function getValueSet(apiKey, oid, version) {
+  debug(`Getting ValueSet: ${oid}${version || ''}`);
+  const params = new URLSearchParams({ id: oid });
+  if (version != null) {
+    params.append('version', version);
+  }
   const options = {
-    method: 'POST',
-    body: params
+    headers: {
+      Authorization: `Basic ${Buffer.from(`apikey:${apiKey}`).toString('base64')}`
+    }
   };
-  return fetch(`https://vsac.nlm.nih.gov/vsac/ws/Ticket/${ticketGrantingTicket}`, options).then(
+  return fetch(`https://vsac.nlm.nih.gov/vsac/svs/RetrieveValueSet?${params}`, options).then(
     res => {
       if (!res.ok) {
         throw new Error(res.status);
@@ -105,22 +83,6 @@ function getServiceTicket(ticketGrantingTicket) {
       return res.text();
     }
   );
-}
-
-function getValueSet(serviceTicket, oid, version) {
-  debug(`Getting ValueSet: ${oid}${version || ''}`);
-  const params = new URLSearchParams();
-  params.append('id', oid);
-  params.append('ticket', serviceTicket);
-  if (version != null) {
-    params.append('version', version);
-  }
-  return fetch(`https://vsac.nlm.nih.gov/vsac/svs/RetrieveValueSet?${params}`).then(res => {
-    if (!res.ok) {
-      throw new Error(res.status);
-    }
-    return res.text();
-  });
 }
 
 function writeFile(file, data, caching = true) {
