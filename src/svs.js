@@ -1,6 +1,37 @@
-const vsacCS = require('./vsac-code-systems');
+const fs = require('fs-extra');
+const path = require('path');
+const fetch = require('node-fetch');
 const parseString = require('xml2js').parseString;
+const debug = require('debug')('vsac'); // To turn on DEBUG: $ export DEBUG=vsac
 const { Code, ValueSet } = require('cql-execution');
+const vsacCS = require('./vsac-code-systems');
+
+async function downloadValueSet(apiKey, oid, version, output, vsDB = {}, caching = true) {
+  debug(`Getting ValueSet: ${oid}${version != null ? ` version ${version}` : ''}`);
+  const params = new URLSearchParams({ id: oid });
+  if (version != null) {
+    params.append('version', version);
+  }
+  const options = {
+    headers: {
+      Authorization: `Basic ${Buffer.from(`apikey:${apiKey}`).toString('base64')}`
+    }
+  };
+  const response = await fetch(
+    `https://vsac.nlm.nih.gov/vsac/svs/RetrieveValueSet?${params}`,
+    options
+  );
+  if (!response.ok) {
+    throw new Error(response.status);
+  }
+  const data = await response.text();
+  parseVSACXML(data, vsDB);
+  if (caching) {
+    const file = path.join(output, `${oid}.xml`);
+    await fs.writeFile(file, data);
+    return file;
+  }
+}
 
 // Take in a string containing a string of the XML response from a VSAC SVS
 // response and parse it into a vsDB object.  This code makes strong
@@ -47,4 +78,4 @@ function parseVSACXML(xmlString, vsDB = {}) {
   vsDB[vsOID][vsVersion] = new ValueSet(vsOID, vsVersion, myCodes);
 }
 
-module.exports = parseVSACXML;
+module.exports = { name: 'SVS', downloadValueSet };

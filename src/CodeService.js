@@ -1,11 +1,11 @@
 const { Code, ValueSet } = require('cql-execution');
-const fs = require('fs');
+const fs = require('fs-extra');
 const proc = require('process');
 const env = proc.env;
 const path = require('path');
-const svs = require('./download-vsac');
+const debug = require('debug')('vsac'); // To turn on DEBUG: $ export DEBUG=vsac
+const svs = require('./svs');
 const fhir = require('./fhir');
-const extractOidAndVersion = require('./extractOidAndVersion');
 
 /**
  * Constructs a code service with functions for downloading codes from the National Library of Medicine's
@@ -74,7 +74,11 @@ class CodeService {
    * @returns {Promise.<undefined,Error>} A promise that returns nothing when
    *   resolved and returns an error when rejected.
    */
-  ensureValueSetsWithAPIKey(valueSetList = [], umlsAPIKey = env['UMLS_API_KEY'], caching = true) {
+  async ensureValueSetsWithAPIKey(
+    valueSetList = [],
+    umlsAPIKey = env['UMLS_API_KEY'],
+    caching = true
+  ) {
     // First, filter out the value sets we already have
     const filteredVSList = valueSetList.filter(vs => {
       const result = this.findValueSet(vs.id, vs.version);
@@ -82,17 +86,56 @@ class CodeService {
     });
     // Now download from VSAC if necessary
     if (filteredVSList.length == 0) {
-      return Promise.resolve();
+      return;
     } else if (typeof umlsAPIKey === 'undefined' || umlsAPIKey == null) {
-      return Promise.reject('Failed to download value sets since UMLS_API_KEY is not set.');
-    } else {
-      return this.api.downloadFromVSACWithAPIKey(
-        umlsAPIKey,
-        filteredVSList,
-        this.cache,
-        this.valueSets,
-        caching
-      );
+      // TODO: Throw error instead
+      throw 'Failed to download value sets since UMLS_API_KEY is not set.';
+    }
+    const oidsAndVersions = [];
+    Object.keys(filteredVSList).forEach(key => {
+      let [id, version] = [filteredVSList[key].id, filteredVSList[key].version];
+      const [oid, embeddedVersion] = extractOidAndVersion(id);
+      if (version == null && embeddedVersion != null) {
+        version = embeddedVersion;
+      }
+      if (this.valueSets[oid] == null || this.valueSets[oid][version] == null) {
+        oidsAndVersions.push({ oid, version });
+      }
+    });
+    if (oidsAndVersions.length) {
+      const output = path.resolve(this.cache);
+      if (caching && !(await fs.exists(output))) {
+        await fs.mkdirp(output);
+      }
+
+      const promises = oidsAndVersions.map(({ oid, version }) => {
+        // Catch errors and convert to resolutions returning an error.  This ensures Promise.all waits for all promises.
+        // See: http://stackoverflow.com/questions/31424561/wait-until-all-es6-promises-complete-even-rejected-promises
+        return this.api
+          .downloadValueSet(umlsAPIKey, oid, version, output, this.valueSets, caching)
+          .catch(err => {
+            debug(
+              `Error downloading valueset ${oid}${version != null ? ` version ${version}` : ''}`,
+              err
+            );
+            return new Error(
+              `Error downloading valueset: ${oid}${version != null ? ` version ${version}` : ''}`
+            );
+          });
+      });
+      const results = await Promise.all(promises);
+      const errors = results.filter(r => r instanceof Error);
+      if (caching && results.length - errors.length > 0) {
+        // There were results, so write the file first before resolving/rejecting
+        try {
+          await fs.writeJson(path.join(output, 'valueset-db.json'), this.valueSets);
+        } catch (err) {
+          errors.push(err);
+        }
+      }
+      if (errors.length > 0) {
+        throw errors;
+      }
     }
   }
 
@@ -197,6 +240,29 @@ function extractSetOfValueSetsFromLibrary(
     );
   }
   return valueSets;
+}
+
+/**
+ * Extracts the oid and version from a url, urn, or oid. Only url supports an embedded version
+ * (separately by |); urn and oid will never return a version. If the input value is not a valid
+ * urn or VSAC URL, it is assumed to be an oid and returned as-is.
+ * @param {string} id - the urn, url, or oid
+ * @returns {[string,string]} the oid and optional version as a pair
+ */
+function extractOidAndVersion(id) {
+  if (id == null) return [];
+
+  // first check for VSAC FHIR URL (ideally https is preferred but support http just in case)
+  // if there is a | at the end, it indicates that a version string follows
+  let m = id.match(/^https?:\/\/cts\.nlm\.nih\.gov\/fhir\/ValueSet\/([^|]+)(\|(.+))?$/);
+  if (m) return m[3] == null ? [m[1]] : [m[1], m[3]];
+
+  // then check for urn:oid
+  m = id.match(/^urn:oid:(.+)$/);
+  if (m) return [m[1]];
+
+  // finally just return as-is
+  return [id];
 }
 
 module.exports = { CodeService };
