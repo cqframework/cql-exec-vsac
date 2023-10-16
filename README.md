@@ -29,10 +29,18 @@ valueset "Diabetes": 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.
 The embedded version, however, is only supported for the canonical URL form of value sets.  It is not supported for URN
 or OID identifiers.
 
-## Credentials Required
+## UMLS API Key Required
 
-This library requires that the credentials of a valid UMLS account be provided to it.  If you do not have an UMLS
-account, you can request one here: https://uts.nlm.nih.gov/license.html
+This library requires a valid UMLS API key.  If you do not have an UMLS account, you can request one here:
+https://uts.nlm.nih.gov/license.html
+
+## SVS and FHIR APIs
+
+The CQL Execution Code Service supports the Value Set Authority Center's
+[SVS API](https://www.nlm.nih.gov/vsac/support/usingvsac/vsacsvsapiv2.html) and
+[FHIR API](https://www.nlm.nih.gov/vsac/support/usingvsac/vsacfhirapi.html). The SVS API is used by default, as our
+internal testing has shown it to be more performant than the FHIR API. The chosen API can be switched by passing
+in the `useFHIR` flag to the `CodeService` constructor.
 
 # Setting Up the Environment
 
@@ -65,8 +73,8 @@ provided via the `UMLS_API_KEY` environment variable.
 
 The `ensureValueSetsWithAPIKey` and `ensureValueSetsInLibraryWithAPIKey` functions are the only functions that attempt
 to download value sets from VSAC.  Before they make a request to VSAC, they will check the cache.  If the value set is
-already in the cache, they will not make a request to VSAC.  Otherwise, they will use VSAC's SVS2 API to download the
-expanded codes from the value set.
+already in the cache, they will not make a request to VSAC.  Otherwise, they will use VSAC's SVS2 API or FHIR API 
+to download the expanded codes from the value set.
 
 The `findValueSet` and `findValueSets` functions (including the legacy `findValueSetsByOid` function) do not reach out
 to VSAC, so implementations should call `ensureValueSetsInLibraryWithAPIKey` or `ensureValueSetsWithAPIKey` before

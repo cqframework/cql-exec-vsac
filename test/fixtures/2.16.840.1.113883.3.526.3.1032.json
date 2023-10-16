@@ -1,0 +1,55 @@
+{
+  "resourceType": "ValueSet",
+  "id": "2.16.840.1.113883.3.526.3.1032",
+  "meta": {
+    "versionId": "18",
+    "lastUpdated": "2022-03-02T18:05:07.000-05:00",
+    "profile": [
+      "http://hl7.org/fhir/StructureDefinition/shareablevalueset",
+      "http://hl7.org/fhir/us/cqfmeasures/StructureDefinition/publishable-valueset-cqfm"
+    ]
+  },
+  "extension": [
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/valueset-effectiveDate",
+      "valueDate": "2022-03-02"
+    }
+  ],
+  "url": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1032",
+  "identifier": [
+    {
+      "system": "urn:ietf:rfc:3986",
+      "value": "urn:oid:2.16.840.1.113883.3.526.3.1032"
+    }
+  ],
+  "version": "20170504",
+  "name": "Systolic Blood Pressure",
+  "title": "Systolic Blood Pressure",
+  "status": "active",
+  "date": "2022-03-03T18:46:01-05:00",
+  "publisher": "PCPI Steward",
+  "expansion": {
+    "identifier": "urn:uuid:77093f17-8698-4b91-b28d-f1cd6efef81d",
+    "timestamp": "2023-10-11T14:21:38-04:00",
+    "total": 1,
+    "offset": 0,
+    "parameter": [
+      {
+        "name": "count",
+        "valueInteger": 1000
+      },
+      {
+        "name": "offset",
+        "valueInteger": 0
+      }
+    ],
+    "contains": [
+      {
+        "system": "http://loinc.org",
+        "version": "2.74",
+        "code": "8480-6",
+        "display": "Systolic blood pressure"
+      }
+    ]
+  }
+}

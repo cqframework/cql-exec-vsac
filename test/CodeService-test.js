@@ -1,72 +1,71 @@
 const cs = require('../src/CodeService');
 const { Code, ValueSet } = require('cql-execution');
 const path = require('path');
-const fs = require('fs-extra');
 const process = require('process');
-const os = require('os');
-const nock = require('nock');
 const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
 chai.use(chaiAsPromised);
 const should = chai.should();
+const sandbox = require('sinon').createSandbox();
+const temp = require('temp');
+const TOBACCO_VS_DB = require('./fixtures/2.16.840.1.113883.3.600.2390-vsdb.json');
 
-describe('CodeService', function () {
+// Automatically track and cleanup files at exit
+temp.track();
+
+describe('CodeService', () => {
   let service, tmpCache;
-  const apiKey = process.env['UMLS_API_KEY'] || 'testkey';
 
-  before(function () {
-    // These tests should never reach out to the network.  If they do, we've done something wrong!
-    nock.disableNetConnect();
-  });
-
-  after(function () {
-    nock.restore();
-    nock.enableNetConnect();
-  });
-
-  beforeEach(function (done) {
+  beforeEach(() => {
     // Create a temporary cache folder and construct the code service using it
-    const [sec, nsec] = process.hrtime();
-    tmpCache = path.join(os.tmpdir(), `test_${sec}_${nsec}-vsac_cache`);
-    fs.mkdirs(tmpCache, err => {
-      if (!err) {
-        service = new cs.CodeService(tmpCache);
-        service.loadValueSetsFromFile(path.join(__dirname, 'fixtures', 'valueset-db.json'));
-      }
-      done(err);
-    });
+    tmpCache = temp.mkdirSync('cql-exec-vsac-test');
+    service = new cs.CodeService(tmpCache);
+    service.loadValueSetsFromFile(path.join(__dirname, 'fixtures', 'valueset-db.json'));
+    // Replace the CodeService API with a mock
+    service.api = {
+      downloadValueSet: sandbox.stub()
+    };
   });
 
-  afterEach(function (done) {
-    // Clean up vars, check and clean nock, delete tmp folder
-    service = null;
-    nock.isDone();
-    nock.cleanAll();
-    fs.remove(tmpCache, err => {
-      tmpCache = null;
-      done(err);
-    });
+  afterEach(() => {
+    // Clean up mocks
+    sandbox.restore();
   });
 
-  describe('#constructor', function () {
-    it('should have empty value sets when there is no pre-existing data', function () {
+  describe('#constructor', () => {
+    it('should have empty value sets when there is no pre-existing data', () => {
       service = new cs.CodeService();
       service.valueSets.should.be.empty;
     });
 
-    it('should have empty value sets when constructed with cache but loadCache flag is false', function () {
+    it('should have empty value sets when constructed with cache but loadCache flag is false', () => {
       service = new cs.CodeService(path.join(__dirname, 'fixtures'), false);
       service.valueSets.should.be.empty;
     });
 
-    it('should have value sets when constructed with cache and loadCache flag is true', function () {
+    it('should have value sets when constructed with cache and loadCache flag is true', () => {
       service = new cs.CodeService(path.join(__dirname, 'fixtures'), true);
       service.valueSets.should.not.be.empty;
     });
+
+    it('should default to SVS API', () => {
+      service = new cs.CodeService(path.join(__dirname, 'fixtures'), true);
+      service.api.name.should.equal('SVS');
+    });
+
+    it('should use SVS API when useFHIR is false', () => {
+      service = new cs.CodeService(path.join(__dirname, 'fixtures'), true, false);
+      service.api.name.should.equal('SVS');
+    });
+
+    it('should use FHIR API when useFHIR is true', () => {
+      service = new cs.CodeService(path.join(__dirname, 'fixtures'), true, true);
+      service.api.name.should.equal('FHIR');
+    });
   });
 
-  describe('#findValueSetsByOid', function () {
-    it('should find loaded value set', function () {
+  describe('#findValueSetsByOid', () => {
+    it('should find loaded value set', () => {
       const oid = '2.16.840.1.113883.3.464.1003.104.12.1013';
       const results = service.findValueSetsByOid(oid);
       results.should.have.length(2);
@@ -81,14 +80,14 @@ describe('CodeService', function () {
       );
     });
 
-    it('should not find invalid value set', function () {
+    it('should not find invalid value set', () => {
       const results = service.findValueSetsByOid('FOO');
       results.should.be.empty;
     });
   });
 
-  describe('#findValueSets', function () {
-    it('should find loaded value sets by OID', function () {
+  describe('#findValueSets', () => {
+    it('should find loaded value sets by OID', () => {
       const oid = '2.16.840.1.113883.3.464.1003.104.12.1013';
       const results = service.findValueSets(oid);
       results.should.have.length(2);
@@ -103,7 +102,7 @@ describe('CodeService', function () {
       );
     });
 
-    it('should find loaded value set by OID and version', function () {
+    it('should find loaded value set by OID and version', () => {
       const oid = '2.16.840.1.113883.3.464.1003.104.12.1013';
       const version = '20170320';
       const results = service.findValueSets(oid, version);
@@ -116,7 +115,7 @@ describe('CodeService', function () {
       );
     });
 
-    it('should find loaded value sets by URN', function () {
+    it('should find loaded value sets by URN', () => {
       const urn = 'urn:oid:2.16.840.1.113883.3.464.1003.104.12.1013';
       const results = service.findValueSets(urn);
       results.should.have.length(2);
@@ -133,7 +132,7 @@ describe('CodeService', function () {
       );
     });
 
-    it('should find loaded value sets by URN and version', function () {
+    it('should find loaded value sets by URN and version', () => {
       const urn = 'urn:oid:2.16.840.1.113883.3.464.1003.104.12.1013';
       const results = service.findValueSets(urn, '20200401');
       results.should.have.length(1);
@@ -144,7 +143,7 @@ describe('CodeService', function () {
       );
     });
 
-    it('should find loaded value sets by https URL', function () {
+    it('should find loaded value sets by https URL', () => {
       const url = 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013';
       const results = service.findValueSets(url);
       results.should.have.length(2);
@@ -161,7 +160,7 @@ describe('CodeService', function () {
       );
     });
 
-    it('should find loaded value sets by https URL and version', function () {
+    it('should find loaded value sets by https URL and version', () => {
       const url = 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013';
       const results = service.findValueSets(url, '20170320');
       results.should.have.length(1);
@@ -173,7 +172,7 @@ describe('CodeService', function () {
       );
     });
 
-    it('should find loaded values sets by http URL', function () {
+    it('should find loaded values sets by http URL', () => {
       const url = 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013';
       const results = service.findValueSets(url);
       results.should.have.length(2);
@@ -190,7 +189,7 @@ describe('CodeService', function () {
       );
     });
 
-    it('should find loaded values sets by http URL and version', function () {
+    it('should find loaded values sets by http URL and version', () => {
       const url = 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013';
       const results = service.findValueSets(url, '20200401');
       results.should.have.length(1);
@@ -201,7 +200,7 @@ describe('CodeService', function () {
       );
     });
 
-    it('should find loaded value set by https URL with embedded version', function () {
+    it('should find loaded value set by https URL with embedded version', () => {
       const url =
         'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013|20170320';
       const results = service.findValueSets(url);
@@ -214,7 +213,7 @@ describe('CodeService', function () {
       );
     });
 
-    it('should prefer explicit version over embedded version in https URL', function () {
+    it('should prefer explicit version over embedded version in https URL', () => {
       const url =
         'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013|20200401';
       const results = service.findValueSets(url, '20170320');
@@ -227,7 +226,7 @@ describe('CodeService', function () {
       );
     });
 
-    it('should find loaded value set by http URL with embedded version', function () {
+    it('should find loaded value set by http URL with embedded version', () => {
       const url =
         'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013|20170320';
       const results = service.findValueSets(url);
@@ -240,7 +239,7 @@ describe('CodeService', function () {
       );
     });
 
-    it('should prefer explicit version over embedded version in http URL', function () {
+    it('should prefer explicit version over embedded version in http URL', () => {
       const url =
         'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013|20200401';
       const results = service.findValueSets(url, '20170320');
@@ -253,22 +252,22 @@ describe('CodeService', function () {
       );
     });
 
-    it('should not find invalid value set by OID', function () {
+    it('should not find invalid value set by OID', () => {
       const results = service.findValueSets('FOO');
       results.should.be.empty;
     });
 
-    it('should not find invalid value set version by OID', function () {
+    it('should not find invalid value set version by OID', () => {
       const results = service.findValueSets('2.16.840.1.113883.3.464.1003.104.12.1013', '20180320');
       results.should.be.empty;
     });
 
-    it('should not find invalid value set by URN', function () {
+    it('should not find invalid value set by URN', () => {
       const results = service.findValueSets('urn:oid:FOO');
       results.should.be.empty;
     });
 
-    it('should not find invalid value set version by URN', function () {
+    it('should not find invalid value set version by URN', () => {
       const results = service.findValueSets(
         'urn:oid:2.16.840.1.113883.3.464.1003.104.12.1013',
         '20180320'
@@ -276,12 +275,12 @@ describe('CodeService', function () {
       results.should.be.empty;
     });
 
-    it('should not find invalid value set by https URL', function () {
+    it('should not find invalid value set by https URL', () => {
       const results = service.findValueSets('https://cts.nlm.nih.gov/fhir/ValueSet/FOO');
       results.should.be.empty;
     });
 
-    it('should not find invalid value set version by https URL', function () {
+    it('should not find invalid value set version by https URL', () => {
       const results = service.findValueSets(
         'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013',
         '20180320'
@@ -289,19 +288,19 @@ describe('CodeService', function () {
       results.should.be.empty;
     });
 
-    it('should not find value set by https URL with invalid embedded version', function () {
+    it('should not find value set by https URL with invalid embedded version', () => {
       const results = service.findValueSets(
         'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013|20180320'
       );
       results.should.be.empty;
     });
 
-    it('should not find invalid value set by http URL', function () {
+    it('should not find invalid value set by http URL', () => {
       const results = service.findValueSets('http://cts.nlm.nih.gov/fhir/ValueSet/FOO');
       results.should.be.empty;
     });
 
-    it('should not find invalid value set version by http URL', function () {
+    it('should not find invalid value set version by http URL', () => {
       const results = service.findValueSets(
         'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013',
         '20180320'
@@ -309,7 +308,7 @@ describe('CodeService', function () {
       results.should.be.empty;
     });
 
-    it('should not find value set by http URL with invalid embedded version', function () {
+    it('should not find value set by http URL with invalid embedded version', () => {
       const results = service.findValueSets(
         'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013|20180320'
       );
@@ -317,8 +316,8 @@ describe('CodeService', function () {
     });
   });
 
-  describe('#findValueSet', function () {
-    it('should find loaded value set by OID only', function () {
+  describe('#findValueSet', () => {
+    it('should find loaded value set by OID only', () => {
       const oid = '2.16.840.1.113883.3.464.1003.104.12.1013';
       const result = service.findValueSet(oid);
       result.should.eql(
@@ -326,7 +325,7 @@ describe('CodeService', function () {
       );
     });
 
-    it('should find loaded value set by URN only', function () {
+    it('should find loaded value set by URN only', () => {
       const urn = 'urn:oid:2.16.840.1.113883.3.464.1003.104.12.1013';
       const result = service.findValueSet(urn);
       result.should.eql(
@@ -336,7 +335,7 @@ describe('CodeService', function () {
       );
     });
 
-    it('should find loaded value set by https URL only', function () {
+    it('should find loaded value set by https URL only', () => {
       const urn = 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013';
       const result = service.findValueSet(urn);
       result.should.eql(
@@ -346,7 +345,7 @@ describe('CodeService', function () {
       );
     });
 
-    it('should find loaded value set by http URL only', function () {
+    it('should find loaded value set by http URL only', () => {
       const urn = 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013';
       const result = service.findValueSet(urn);
       result.should.eql(
@@ -356,7 +355,7 @@ describe('CodeService', function () {
       );
     });
 
-    it('should find loaded value set by OID and version', function () {
+    it('should find loaded value set by OID and version', () => {
       const oid = '2.16.840.1.113883.3.464.1003.104.12.1013';
       const version = '20170320';
       const result = service.findValueSet(oid, version);
@@ -368,7 +367,7 @@ describe('CodeService', function () {
       );
     });
 
-    it('should find loaded value set by URN and version', function () {
+    it('should find loaded value set by URN and version', () => {
       const urn = 'urn:oid:2.16.840.1.113883.3.464.1003.104.12.1013';
       const version = '20170320';
       const result = service.findValueSet(urn, version);
@@ -380,7 +379,7 @@ describe('CodeService', function () {
       );
     });
 
-    it('should find loaded value set by https URL and version', function () {
+    it('should find loaded value set by https URL and version', () => {
       const url = 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013';
       const version = '20170320';
       const result = service.findValueSet(url, version);
@@ -392,7 +391,7 @@ describe('CodeService', function () {
       );
     });
 
-    it('should find loaded value set by http URL and version', function () {
+    it('should find loaded value set by http URL and version', () => {
       const url = 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013';
       const version = '20170320';
       const result = service.findValueSet(url, version);
@@ -404,7 +403,7 @@ describe('CodeService', function () {
       );
     });
 
-    it('should find loaded value set by https URL and embedded version', function () {
+    it('should find loaded value set by https URL and embedded version', () => {
       const url =
         'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013|20170320';
       const result = service.findValueSet(url);
@@ -416,7 +415,7 @@ describe('CodeService', function () {
       );
     });
 
-    it('should find loaded value set by http URL and embedded version', function () {
+    it('should find loaded value set by http URL and embedded version', () => {
       const url =
         'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013|20170320';
       const result = service.findValueSet(url);
@@ -428,7 +427,7 @@ describe('CodeService', function () {
       );
     });
 
-    it('should prefer passed in version over url-embedded version', function () {
+    it('should prefer passed in version over url-embedded version', () => {
       const url =
         'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013|20200401';
       const version = '20170320';
@@ -451,30 +450,30 @@ describe('CodeService', function () {
       );
     });
 
-    it('should not find value set with invalid OID', function () {
+    it('should not find value set with invalid OID', () => {
       const result = service.findValueSet('FOO');
       should.not.exist(result);
     });
 
-    it('should not find value set with invalid version', function () {
+    it('should not find value set with invalid version', () => {
       const result = service.findValueSet('2.16.840.1.113883.3.464.1003.104.12.1013', '20170321');
       should.not.exist(result);
     });
   });
 
-  //Updated tests for use with API Key based auth
-  describe('#ensureValueSetsWithAPIKey', function () {
-    it('should not attempt downloads for value sets it already has (by OID)', function () {
+  describe('#ensureValueSetsWithAPIKey', () => {
+    it('should not attempt downloads for value sets it already has (by OID)', async () => {
       const vsList = [
         {
           name: 'HDL Cholesterol',
           id: '2.16.840.1.113883.3.464.1003.104.12.1013'
         }
       ];
-      return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+      await service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+      sandbox.assert.notCalled(service.api.downloadValueSet);
     });
 
-    it('should not attempt downloads for value sets it already has (by OID and version)', function () {
+    it('should not attempt downloads for value sets it already has (by OID and version)', async () => {
       const vsList = [
         {
           name: 'HDL Cholesterol',
@@ -482,20 +481,22 @@ describe('CodeService', function () {
           version: '20170320'
         }
       ];
-      return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+      await service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+      sandbox.assert.notCalled(service.api.downloadValueSet);
     });
 
-    it('should not attempt downloads for value sets it already has (by URN)', function () {
+    it('should not attempt downloads for value sets it already has (by URN)', async () => {
       const vsList = [
         {
           name: 'HDL Cholesterol',
           id: 'urn:oid:2.16.840.1.113883.3.464.1003.104.12.1013'
         }
       ];
-      return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+      await service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+      sandbox.assert.notCalled(service.api.downloadValueSet);
     });
 
-    it('should not attempt downloads for value sets it already has (by URN and version)', function () {
+    it('should not attempt downloads for value sets it already has (by URN and version)', async () => {
       const vsList = [
         {
           name: 'HDL Cholesterol',
@@ -503,20 +504,22 @@ describe('CodeService', function () {
           version: '20170320'
         }
       ];
-      return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+      await service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+      sandbox.assert.notCalled(service.api.downloadValueSet);
     });
 
-    it('should not attempt downloads for value sets it already has (by https URL)', function () {
+    it('should not attempt downloads for value sets it already has (by https URL)', async () => {
       const vsList = [
         {
           name: 'HDL Cholesterol',
           id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013'
         }
       ];
-      return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+      await service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+      sandbox.assert.notCalled(service.api.downloadValueSet);
     });
 
-    it('should not attempt downloads for value sets it already has (by https URL and version)', function () {
+    it('should not attempt downloads for value sets it already has (by https URL and version)', async () => {
       const vsList = [
         {
           name: 'HDL Cholesterol',
@@ -524,20 +527,22 @@ describe('CodeService', function () {
           version: '20170320'
         }
       ];
-      return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+      await service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+      sandbox.assert.notCalled(service.api.downloadValueSet);
     });
 
-    it('should not attempt downloads for value sets it already has (by http URL)', function () {
+    it('should not attempt downloads for value sets it already has (by http URL)', async () => {
       const vsList = [
         {
           name: 'HDL Cholesterol',
           id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013'
         }
       ];
-      return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+      await service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+      sandbox.assert.notCalled(service.api.downloadValueSet);
     });
 
-    it('should not attempt downloads for value sets it already has (by http URL and version)', function () {
+    it('should not attempt downloads for value sets it already has (by http URL and version)', async () => {
       const vsList = [
         {
           name: 'HDL Cholesterol',
@@ -545,30 +550,33 @@ describe('CodeService', function () {
           version: '20170320'
         }
       ];
-      return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+      await service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+      sandbox.assert.notCalled(service.api.downloadValueSet);
     });
 
-    it('should not attempt downloads for value sets it already has (by https URL with embedded version)', function () {
+    it('should not attempt downloads for value sets it already has (by https URL with embedded version)', async () => {
       const vsList = [
         {
           name: 'HDL Cholesterol',
           id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013|20170320'
         }
       ];
-      return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+      await service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+      sandbox.assert.notCalled(service.api.downloadValueSet);
     });
 
-    it('should not attempt downloads for value sets it already has (by http URL with embedded version)', function () {
+    it('should not attempt downloads for value sets it already has (by http URL with embedded version)', async () => {
       const vsList = [
         {
           name: 'HDL Cholesterol',
           id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.464.1003.104.12.1013|20170320'
         }
       ];
-      return service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+      await service.ensureValueSetsWithAPIKey(vsList).should.be.fulfilled;
+      sandbox.assert.notCalled(service.api.downloadValueSet);
     });
 
-    it('should download value sets it does not have (by OID)', function () {
+    it('should download value sets it does not have (by OID)', () => {
       return doDownloadTestWithAPIKey([
         {
           name: 'Systolic Blood Pressure',
@@ -578,25 +586,25 @@ describe('CodeService', function () {
       ]);
     });
 
-    it('should download value sets it does not have (by OID and version)', function () {
+    it('should download value sets it does not have (by OID and version)', () => {
       return doDownloadTestWithAPIKey(
         [
           {
             name: 'Systolic Blood Pressure',
             id: '2.16.840.1.113883.3.526.3.1032',
-            version: '20170320'
+            version: '20170504'
           },
           {
             name: 'Current Tobacco Smoker',
             id: '2.16.840.1.113883.3.600.2390',
-            version: '20170320'
+            version: '20210304'
           }
         ],
         true
       );
     });
 
-    it('should download value sets it does not have when no version is supplied (by URN)', function () {
+    it('should download value sets it does not have when no version is supplied (by URN)', () => {
       return doDownloadTestWithAPIKey([
         {
           name: 'Systolic Blood Pressure',
@@ -609,25 +617,25 @@ describe('CodeService', function () {
       ]);
     });
 
-    it('should download value sets it does not have (by URN and version)', function () {
+    it('should download value sets it does not have (by URN and version)', () => {
       return doDownloadTestWithAPIKey(
         [
           {
             name: 'Systolic Blood Pressure',
             id: 'urn:oid:2.16.840.1.113883.3.526.3.1032',
-            version: '20170320'
+            version: '20170504'
           },
           {
             name: 'Current Tobacco Smoker',
             id: 'urn:oid:2.16.840.1.113883.3.600.2390',
-            version: '20170320'
+            version: '20210304'
           }
         ],
         true
       );
     });
 
-    it('should download value sets it does not have when no version is supplied (by https URL)', function () {
+    it('should download value sets it does not have when no version is supplied (by https URL)', () => {
       return doDownloadTestWithAPIKey([
         {
           name: 'Systolic Blood Pressure',
@@ -640,41 +648,41 @@ describe('CodeService', function () {
       ]);
     });
 
-    it('should download value sets it does not have (by https URL and version)', function () {
+    it('should download value sets it does not have (by https URL and version)', () => {
       return doDownloadTestWithAPIKey(
         [
           {
             name: 'Systolic Blood Pressure',
             id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1032',
-            version: '20170320'
+            version: '20170504'
           },
           {
             name: 'Current Tobacco Smoker',
             id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.2390',
-            version: '20170320'
+            version: '20210304'
           }
         ],
         true
       );
     });
 
-    it('should download value sets it does not have (by https URL with embedded version)', function () {
+    it('should download value sets it does not have (by https URL with embedded version)', () => {
       return doDownloadTestWithAPIKey(
         [
           {
             name: 'Systolic Blood Pressure',
-            id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1032|20170320'
+            id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1032|20170504'
           },
           {
             name: 'Current Tobacco Smoker',
-            id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.2390|20170320'
+            id: 'https://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.2390|20210304'
           }
         ],
         true
       );
     });
 
-    it('should download value sets it does not have when no version is supplied (by http URL)', function () {
+    it('should download value sets it does not have when no version is supplied (by http URL)', () => {
       return doDownloadTestWithAPIKey([
         {
           name: 'Systolic Blood Pressure',
@@ -687,101 +695,72 @@ describe('CodeService', function () {
       ]);
     });
 
-    it('should download value sets it does not have (by http URL and version)', function () {
+    it('should download value sets it does not have (by http URL and version)', () => {
       return doDownloadTestWithAPIKey(
         [
           {
             name: 'Systolic Blood Pressure',
             id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1032',
-            version: '20170320'
+            version: '20170504'
           },
           {
             name: 'Current Tobacco Smoker',
             id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.2390',
-            version: '20170320'
+            version: '20210304'
           }
         ],
         true
       );
     });
 
-    it('should download value sets it does not have (by http URL with embedded version)', function () {
+    it('should download value sets it does not have (by http URL with embedded version)', () => {
       return doDownloadTestWithAPIKey(
         [
           {
             name: 'Systolic Blood Pressure',
-            id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1032|20170320'
+            id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.526.3.1032|20170504'
           },
           {
             name: 'Current Tobacco Smoker',
-            id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.2390|20170320'
+            id: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.600.2390|20210304'
           }
         ],
         true
       );
     });
 
-    const doDownloadTestWithAPIKey = (vsList, withVersion = false) => {
-      // Just to be sure, check length is only 2 (as expected)
-      Object.keys(service.valueSets).should.have.length(2);
-
-      const query1 = {
-        id: '2.16.840.1.113883.3.526.3.1032'
-      };
-      const query2 = {
-        id: '2.16.840.1.113883.3.600.2390'
-      };
-      if (withVersion) {
-        query1.version = '20170320';
-        query2.version = '20170320';
-      }
-      nock('https://vsac.nlm.nih.gov')
-        // VS retrieval #1
-        .get('/vsac/svs/RetrieveValueSet')
-        .basicAuth({ user: 'apikey', pass: apiKey })
-        .query(query1)
-        .replyWithFile(200, path.join(__dirname, 'fixtures', '2.16.840.1.113883.3.526.3.1032.xml'))
-        // VS retrieval #2
-        .get('/vsac/svs/RetrieveValueSet')
-        .basicAuth({ user: 'apikey', pass: apiKey })
-        .query(query2)
-        .replyWithFile(200, path.join(__dirname, 'fixtures', '2.16.840.1.113883.3.600.2390.xml'));
-
-      return service.ensureValueSetsWithAPIKey(vsList, apiKey).then(function () {
-        // Test that the value sets were properly loaded into memory
-        service.valueSets.should.not.be.empty;
-        Object.keys(service.valueSets).should.have.length(4);
-        const vs1 = service.findValueSet('2.16.840.1.113883.3.526.3.1032', '20170320');
-        vs1.codes.should.have.length(1);
-        const vs2 = service.findValueSet('2.16.840.1.113883.3.600.2390', '20170418');
-        vs2.codes.should.have.length(24);
-        // Test that the value sets were properly written to the cache
-        const cached = require(path.join(tmpCache, 'valueset-db.json'));
-        JSON.parse(JSON.stringify(service.valueSets)).should.eql(cached);
-      }); //.catch((err) => console.log(err));
+    const doDownloadTestWithAPIKey = async (vsList, withVersion = false) => {
+      service.api.downloadValueSet.callsFake(
+        async (apiKey, oid, version, output, vsDB = {}, caching = true) => {
+          return path.join(service.cache, `${oid}.xml`);
+        }
+      );
+      await service.ensureValueSetsWithAPIKey(vsList, 'testkey');
+      sandbox.assert.calledWith(
+        service.api.downloadValueSet,
+        'testkey',
+        '2.16.840.1.113883.3.526.3.1032',
+        withVersion ? '20170504' : undefined
+      );
+      sandbox.assert.calledWith(
+        service.api.downloadValueSet,
+        'testkey',
+        '2.16.840.1.113883.3.600.2390',
+        withVersion ? '20210304' : undefined
+      );
     };
 
-    it('should download and cache successful value sets before throwing error', function () {
-      // Just to be sure, check length is only 2 (as expected)
-      Object.keys(service.valueSets).should.have.length(2);
-
-      nock('https://vsac.nlm.nih.gov')
-        // VS retrieval #1
-        .get('/vsac/svs/RetrieveValueSet')
-        .basicAuth({ user: 'apikey', pass: apiKey })
-        .query({
-          id: '1.2.3.4.5.6.7.8.9.10',
-          version: '20170320'
-        })
-        .reply(404) // Not Found
-        // VS retrieval #2
-        .get('/vsac/svs/RetrieveValueSet')
-        .basicAuth({ user: 'apikey', pass: apiKey })
-        .query({
-          id: '2.16.840.1.113883.3.600.2390',
-          version: '20170320'
-        })
-        .replyWithFile(200, path.join(__dirname, 'fixtures', '2.16.840.1.113883.3.600.2390.xml'));
+    it('should download and cache successful value sets before throwing error', async () => {
+      service.api.downloadValueSet.callsFake(
+        async (apiKey, oid, version, output, vsDB = {}, caching = true) => {
+          if (oid === '1.2.3.4.5.6.7.8.9.10') {
+            throw new Error(404); // Not Found
+          } else if (oid === '2.16.840.1.113883.3.600.2390') {
+            Object.assign(vsDB, TOBACCO_VS_DB);
+          }
+          return path.join(service.cache, `${oid}.xml`);
+        }
+      );
 
       const vsList = [
         {
@@ -792,41 +771,36 @@ describe('CodeService', function () {
         {
           name: 'Current Tobacco Smoker',
           id: '2.16.840.1.113883.3.600.2390',
-          version: '20170320'
+          version: '20210304'
         }
       ];
 
-      return service
-        .ensureValueSetsWithAPIKey(vsList, apiKey)
-        .then(function () {
-          should.fail(0, 1, 'This code should never be executed since there were errors');
-        })
-        .catch(function (error) {
-          // Test that the value sets were properly loaded into memory
-          service.valueSets.should.not.be.empty;
-          Object.keys(service.valueSets).should.have.length(3);
-          const vs1 = service.findValueSet('1.2.3.4.5.6.7.8.9.10');
-          should.not.exist(vs1);
-          const vs2 = service.findValueSet('2.16.840.1.113883.3.600.2390', '20170418');
-          vs2.codes.should.have.length(24);
-          // Test that the value sets were properly written to the cache
-          const cached = require(path.join(tmpCache, 'valueset-db.json'));
-          JSON.parse(JSON.stringify(service.valueSets)).should.eql(cached);
-          // Test that the error was thrown
-          error.should.have.length(1);
-          error[0].should.be.an('error');
-          error[0].message.should.contain('1.2.3.4.5.6.7.8.9.10');
-        });
+      try {
+        await service.ensureValueSetsWithAPIKey(vsList, 'testkey');
+        should.fail(0, 1, 'This code should never be executed since there were errors');
+      } catch (error) {
+        // Test that the value sets were properly loaded into memory
+        service.valueSets.should.not.be.empty;
+        Object.keys(service.valueSets).should.have.length(3);
+        const vs1 = service.findValueSet('1.2.3.4.5.6.7.8.9.10');
+        should.not.exist(vs1);
+        const vs2 = service.findValueSet('2.16.840.1.113883.3.600.2390', '20210304');
+        vs2.codes.should.have.length(26);
+        // Test that the value sets were properly written to the cache
+        const cached = require(path.join(tmpCache, 'valueset-db.json'));
+        JSON.parse(JSON.stringify(service.valueSets)).should.eql(cached);
+        // Test that the error was thrown
+        error.should.have.length(1);
+        error[0].should.be.an('error');
+        error[0].message.should.contain('1.2.3.4.5.6.7.8.9.10');
+      }
     });
 
-    it('should error if no API Key is supplied', function () {
+    it('should error if no API Key is supplied', async () => {
       const oldAPIKey = process.env['UMLS_API_KEY'];
       try {
         // Make sure env is clear so no API key creeps through!
         delete process.env['UMLS_API_KEY'];
-
-        nock('https://vsac.nlm.nih.gov');
-
         const vsList = [
           {
             name: 'Systolic Blood Pressure',
@@ -834,30 +808,24 @@ describe('CodeService', function () {
             version: '20170320'
           }
         ];
-        return service
-          .ensureValueSetsWithAPIKey(vsList, null)
-          .then(function () {
-            should.fail(0, 1, 'This code should never be executed');
-          })
-          .catch(function (error) {
-            error.should.eql('Failed to download value sets since UMLS_API_KEY is not set.');
-          });
+
+        try {
+          await service.ensureValueSetsWithAPIKey(vsList, null);
+          should.fail(0, 1, 'This code should never be executed');
+        } catch (error) {
+          error.should.eql('Failed to download value sets since UMLS_API_KEY is not set.');
+        }
       } finally {
         process.env['UMLS_API_KEY'] = oldAPIKey;
       }
     });
 
-    it('should error if invalid API Key is supplied', function () {
-      // Technically this should only happen if there is an issue w/ VSAC, but let's be sure we handle it
-      nock('https://vsac.nlm.nih.gov')
-        // VS retrieval #1
-        .get('/vsac/svs/RetrieveValueSet')
-        .basicAuth({ user: 'apikey', pass: 'wrongkey' })
-        .query({
-          id: '2.16.840.1.113883.3.526.3.1032',
-          version: '20170320'
-        })
-        .reply(401, 'Unauthorized');
+    it('should error if invalid API Key is supplied', async () => {
+      service.api.downloadValueSet.callsFake(
+        async (apiKey, oid, version, output, vsDB = {}, caching = true) => {
+          throw new Error(401); // Unauthorized
+        }
+      );
 
       const vsList = [
         {
@@ -866,29 +834,23 @@ describe('CodeService', function () {
           version: '20170320'
         }
       ];
-      return service
-        .ensureValueSetsWithAPIKey(vsList, 'wrongkey')
-        .then(function () {
-          should.fail(0, 1, 'This code should never be executed');
-        })
-        .catch(function (error) {
-          error.should.have.length(1);
-          error[0].should.be.an('error');
-          error[0].message.should.contain('2.16.840.1.113883.3.526.3.1032');
-        });
+
+      try {
+        await service.ensureValueSetsWithAPIKey(vsList, 'wrongkey');
+        should.fail(0, 1, 'This code should never be executed');
+      } catch (error) {
+        error.should.have.length(1);
+        error[0].should.be.an('error');
+        error[0].message.should.contain('2.16.840.1.113883.3.526.3.1032');
+      }
     });
 
-    it('should error if value set is not found', function () {
-      // Technically this should only happen if there is an issue w/ VSAC, but let's be sure we handle it
-      nock('https://vsac.nlm.nih.gov')
-        // VS retrieval #1
-        .get('/vsac/svs/RetrieveValueSet')
-        .basicAuth({ user: 'apikey', pass: apiKey })
-        .query({
-          id: '1.2.3.4.5.6.7.8.9.10',
-          version: '20170320'
-        })
-        .reply(404); // Not Found
+    it('should error if value set is not found', async () => {
+      service.api.downloadValueSet.callsFake(
+        async (apiKey, oid, version, output, vsDB = {}, caching = true) => {
+          throw new Error(404); // Not Found
+        }
+      );
 
       const vsList = [
         {
@@ -897,16 +859,15 @@ describe('CodeService', function () {
           version: '20170320'
         }
       ];
-      return service
-        .ensureValueSetsWithAPIKey(vsList, apiKey)
-        .then(function () {
-          should.fail(0, 1, 'This code should never be executed');
-        })
-        .catch(function (error) {
-          error.should.have.length(1);
-          error[0].should.be.an('error');
-          error[0].message.should.contain('1.2.3.4.5.6.7.8.9.10');
-        });
+
+      try {
+        await service.ensureValueSetsWithAPIKey(vsList, 'testkey');
+        should.fail(0, 1, 'This code should never be executed since there were errors');
+      } catch (error) {
+        error.should.have.length(1);
+        error[0].should.be.an('error');
+        error[0].message.should.contain('1.2.3.4.5.6.7.8.9.10');
+      }
     });
   });
 });
