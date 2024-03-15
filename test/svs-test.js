@@ -23,7 +23,6 @@ const SYSTOLIC_OID_URI_VS_DB = fixVSDBFixture(
   require('./fixtures/2.16.840.1.113883.3.526.3.1032-oid-uri-vsdb.json')
 );
 
-
 describe('SVS', () => {
   let tmpCache;
 

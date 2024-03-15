@@ -13,27 +13,27 @@ async function downloadValueSet(
   output,
   vsDB = {},
   caching = true,
-  opts = { parseCodeSystem: 'replace' }
+  options = { parseCodeSystem: 'replace' }
 ) {
   debug(`Getting ValueSet: ${oid}${version != null ? ` version ${version}` : ''}`);
   const params = new URLSearchParams({ id: oid });
   if (version != null) {
     params.append('version', version);
   }
-  const options = {
+  const requestOptions = {
     headers: {
       Authorization: `Basic ${Buffer.from(`apikey:${apiKey}`).toString('base64')}`
     }
   };
   const response = await fetch(
     `https://vsac.nlm.nih.gov/vsac/svs/RetrieveValueSet?${params}`,
-    options
+    requestOptions
   );
   if (!response.ok) {
     throw new Error(response.status);
   }
   const data = await response.text();
-  parseVSACXML(data, vsDB, opts);
+  parseVSACXML(data, vsDB, options);
   if (caching) {
     const file = path.join(output, `${oid}.xml`);
     await fs.writeFile(file, data);
@@ -41,10 +41,21 @@ async function downloadValueSet(
   }
 }
 
+function getVSACodeSystem(codeSystems, system) {
+  if (
+    typeof codeSystems[system] !== 'undefined' &&
+    typeof codeSystems[system].uri !== 'undefined'
+  ) {
+    return codeSystems[system];
+  }
+
+  return null;
+}
+
 // Take in a string containing a string of the XML response from a VSAC SVS
 // response and parse it into a vsDB object.  This code makes strong
 // assumptions about the structure of the message.  See code below.
-function parseVSACXML(xmlString, vsDB = {}, opts = { parseCodeSystem: 'replace' }) {
+function parseVSACXML(xmlString, vsDB = {}, options = { parseCodeSystem: 'replace' }) {
   if (typeof xmlString === 'undefined' || xmlString == null || xmlString.trim().length == 0) {
     return;
   }
@@ -70,39 +81,27 @@ function parseVSACXML(xmlString, vsDB = {}, opts = { parseCodeSystem: 'replace' 
     let system = conceptList[concept]['$']['codeSystem'];
     const code = conceptList[concept]['$']['code'];
     const version = conceptList[concept]['$']['codeSystemVersion'];
-    // Optionally include both if they exist
-    if (opts.parseCodeSystem === 'include') {
-      if (typeof vsacCS[system] !== 'undefined' && typeof vsacCS[system].uri !== 'undefined') {
-        const uriSystem = vsacCS[system].uri;
-        codeList.push({ code, system: uriSystem, version });
-      }
-      // keep the standard oid
-      system = `urn:oid:${system}`;
-      codeList.push({ code, system, version });
-    } else if (opts.parseCodeSystem === 'replace') {
-      if (typeof vsacCS[system] !== 'undefined' && typeof vsacCS[system].uri !== 'undefined') {
-        system = vsacCS[system].uri;
-      } else {
-        system = `urn:oid:${system}`;
-      }
+    const systemOid = `urn:oid:${system}`;
+    const systemUri = getVSACodeSystem(vsacCS, system);
 
-      codeList.push({ code, system, version });
+    if (options.parseCodeSystem === 'replace') {
+      if (systemUri !== null) {
+        system = systemUri.uri;
+      } else {
+        system = systemOid;
+      }
+    } else if (options.parseCodeSystem === 'include') {
+      // Optionally include both if they exist
+      if (systemUri !== null) {
+        codeList.push({ code, system: systemUri.uri, version });
+      }
+      // Include the standard oid system
+      system = systemOid;
     } else {
-      system = `urn:oid:${system}`;
-      codeList.push({ code, system, version });
+      system = systemOid;
     }
 
-    // if (opts.parseCodeSystem === 'include') {
-
-    // } else if (
-    //   opts.parseCodeSystem === 'replace' &&
-    //   typeof vsacCS[system] !== 'undefined' &&
-    //   typeof vsacCS[system].uri !== 'undefined'
-    // ) {
-    //   system = vsacCS[system].uri;
-    // } else {
-    //   system = `urn:oid:${system}`;
-    // }
+    codeList.push({ code, system, version });
   }
 
   // Format according to the current valueset db JSON.

@@ -11,7 +11,7 @@ async function downloadValueSet(
   output,
   vsDB = {},
   caching = true,
-  opts = { replaceCodeSystem: true }
+  options = { parseCodeSystem: 'replace' }
 ) {
   const pages = await getValueSetPages(apiKey, oid, version);
   if (pages == null || pages.length === 0) {
