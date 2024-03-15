@@ -4,7 +4,15 @@ const fetch = require('node-fetch');
 const debug = require('debug')('vsac'); // To turn on DEBUG: $ export DEBUG=vsac
 const { Code, ValueSet } = require('cql-execution');
 
-async function downloadValueSet(apiKey, oid, version, output, vsDB = {}, caching = true) {
+async function downloadValueSet(
+  apiKey,
+  oid,
+  version,
+  output,
+  vsDB = {},
+  caching = true,
+  opts = { replaceCodeSystem: true }
+) {
   const pages = await getValueSetPages(apiKey, oid, version);
   if (pages == null || pages.length === 0) {
     return;

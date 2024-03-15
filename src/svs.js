@@ -6,7 +6,15 @@ const debug = require('debug')('vsac'); // To turn on DEBUG: $ export DEBUG=vsac
 const { Code, ValueSet } = require('cql-execution');
 const vsacCS = require('./vsac-code-systems');
 
-async function downloadValueSet(apiKey, oid, version, output, vsDB = {}, caching = true) {
+async function downloadValueSet(
+  apiKey,
+  oid,
+  version,
+  output,
+  vsDB = {},
+  caching = true,
+  opts = { parseCodeSystem: 'replace' }
+) {
   debug(`Getting ValueSet: ${oid}${version != null ? ` version ${version}` : ''}`);
   const params = new URLSearchParams({ id: oid });
   if (version != null) {
@@ -25,7 +33,7 @@ async function downloadValueSet(apiKey, oid, version, output, vsDB = {}, caching
     throw new Error(response.status);
   }
   const data = await response.text();
-  parseVSACXML(data, vsDB);
+  parseVSACXML(data, vsDB, opts);
   if (caching) {
     const file = path.join(output, `${oid}.xml`);
     await fs.writeFile(file, data);
@@ -36,7 +44,7 @@ async function downloadValueSet(apiKey, oid, version, output, vsDB = {}, caching
 // Take in a string containing a string of the XML response from a VSAC SVS
 // response and parse it into a vsDB object.  This code makes strong
 // assumptions about the structure of the message.  See code below.
-function parseVSACXML(xmlString, vsDB = {}) {
+function parseVSACXML(xmlString, vsDB = {}, opts = { parseCodeSystem: 'replace' }) {
   if (typeof xmlString === 'undefined' || xmlString == null || xmlString.trim().length == 0) {
     return;
   }
@@ -59,17 +67,42 @@ function parseVSACXML(xmlString, vsDB = {}) {
   // Loop over the codes and build the JSON.
   const codeList = [];
   for (let concept in conceptList) {
-    let system;
-    const systemOID = conceptList[concept]['$']['codeSystem'];
-    if (typeof vsacCS[systemOID] !== 'undefined' && typeof vsacCS[systemOID].uri !== 'undefined') {
-      system = vsacCS[systemOID].uri;
-    } else {
-      system = `urn:oid:${systemOID}`;
-    }
-
+    let system = conceptList[concept]['$']['codeSystem'];
     const code = conceptList[concept]['$']['code'];
     const version = conceptList[concept]['$']['codeSystemVersion'];
-    codeList.push({ code, system, version });
+    // Optionally include both if they exist
+    if (opts.parseCodeSystem === 'include') {
+      if (typeof vsacCS[system] !== 'undefined' && typeof vsacCS[system].uri !== 'undefined') {
+        const uriSystem = vsacCS[system].uri;
+        codeList.push({ code, system: uriSystem, version });
+      }
+      // keep the standard oid
+      system = `urn:oid:${system}`;
+      codeList.push({ code, system, version });
+    } else if (opts.parseCodeSystem === 'replace') {
+      if (typeof vsacCS[system] !== 'undefined' && typeof vsacCS[system].uri !== 'undefined') {
+        system = vsacCS[system].uri;
+      } else {
+        system = `urn:oid:${system}`;
+      }
+
+      codeList.push({ code, system, version });
+    } else {
+      system = `urn:oid:${system}`;
+      codeList.push({ code, system, version });
+    }
+
+    // if (opts.parseCodeSystem === 'include') {
+
+    // } else if (
+    //   opts.parseCodeSystem === 'replace' &&
+    //   typeof vsacCS[system] !== 'undefined' &&
+    //   typeof vsacCS[system].uri !== 'undefined'
+    // ) {
+    //   system = vsacCS[system].uri;
+    // } else {
+    //   system = `urn:oid:${system}`;
+    // }
   }
 
   // Format according to the current valueset db JSON.
