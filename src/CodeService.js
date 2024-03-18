@@ -77,7 +77,8 @@ class CodeService {
   async ensureValueSetsWithAPIKey(
     valueSetList = [],
     umlsAPIKey = env['UMLS_API_KEY'],
-    caching = true
+    caching = true,
+    options = { parseCodeSystem: 'replace' }
   ) {
     // First, filter out the value sets we already have
     const filteredVSList = valueSetList.filter(vs => {
@@ -112,7 +113,7 @@ class CodeService {
         // Catch errors and convert to resolutions returning an error.  This ensures Promise.all waits for all promises.
         // See: http://stackoverflow.com/questions/31424561/wait-until-all-es6-promises-complete-even-rejected-promises
         return this.api
-          .downloadValueSet(umlsAPIKey, oid, version, output, this.valueSets, caching)
+          .downloadValueSet(umlsAPIKey, oid, version, output, this.valueSets, caching, options)
           .catch(err => {
             debug(
               `Error downloading valueset ${oid}${version != null ? ` version ${version}` : ''}`,
@@ -151,10 +152,11 @@ class CodeService {
     library,
     checkIncluded = true,
     umlsAPIKey = env['UMLS_API_KEY'],
-    caching = true
+    caching = true,
+    options = { parseCodeSystem: 'replace' }
   ) {
     const valueSets = extractSetOfValueSetsFromLibrary(library, checkIncluded);
-    return this.ensureValueSetsWithAPIKey(Array.from(valueSets), umlsAPIKey, caching);
+    return this.ensureValueSetsWithAPIKey(Array.from(valueSets), umlsAPIKey, caching, options);
   }
 
   /**
