@@ -41,7 +41,7 @@ async function downloadValueSet(
   }
 }
 
-function getVSACodeSystem(codeSystems, system) {
+function getVSACCodeSystem(codeSystems, system) {
   if (
     typeof codeSystems[system] !== 'undefined' &&
     typeof codeSystems[system].uri !== 'undefined'
@@ -82,7 +82,7 @@ function parseVSACXML(xmlString, vsDB = {}, options = { parseCodeSystem: 'replac
     const code = conceptList[concept]['$']['code'];
     const version = conceptList[concept]['$']['codeSystemVersion'];
     const systemOid = `urn:oid:${system}`;
-    const systemUri = getVSACodeSystem(vsacCS, system);
+    const systemUri = getVSACCodeSystem(vsacCS, system);
 
     if (options.parseCodeSystem === 'replace') {
       if (systemUri !== null) {
