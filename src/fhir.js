@@ -11,7 +11,9 @@ async function downloadValueSet(
   output,
   vsDB = {},
   caching = true,
-  options = { /* reserved for future use */ }
+  options = {
+    /* reserved for future use */
+  }
 ) {
   const pages = await getValueSetPages(apiKey, oid, version);
   if (pages == null || pages.length === 0) {
