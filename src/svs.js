@@ -13,7 +13,7 @@ async function downloadValueSet(
   output,
   vsDB = {},
   caching = true,
-  options = { parseCodeSystem: 'replace' }
+  options = { svsCodeSystemType: 'url' }
 ) {
   debug(`Getting ValueSet: ${oid}${version != null ? ` version ${version}` : ''}`);
   const params = new URLSearchParams({ id: oid });
@@ -55,7 +55,7 @@ function getVSACCodeSystem(codeSystems, system) {
 // Take in a string containing a string of the XML response from a VSAC SVS
 // response and parse it into a vsDB object.  This code makes strong
 // assumptions about the structure of the message.  See code below.
-function parseVSACXML(xmlString, vsDB = {}, options = { parseCodeSystem: 'replace' }) {
+function parseVSACXML(xmlString, vsDB = {}, options = { svsCodeSystemType: 'url' }) {
   if (typeof xmlString === 'undefined' || xmlString == null || xmlString.trim().length == 0) {
     return;
   }
@@ -84,13 +84,14 @@ function parseVSACXML(xmlString, vsDB = {}, options = { parseCodeSystem: 'replac
     const systemOid = `urn:oid:${system}`;
     const systemUri = getVSACCodeSystem(vsacCS, system);
 
-    if (options.parseCodeSystem === 'replace') {
+    // Replace oid system with the url system, if one exists
+    if (options.svsCodeSystemType === 'url') {
       if (systemUri !== null) {
         system = systemUri.uri;
       } else {
         system = systemOid;
       }
-    } else if (options.parseCodeSystem === 'include') {
+    } else if (options.svsCodeSystemType === 'both') {
       // Optionally include both if they exist
       if (systemUri !== null) {
         codeList.push({ code, system: systemUri.uri, version });
@@ -98,6 +99,7 @@ function parseVSACXML(xmlString, vsDB = {}, options = { parseCodeSystem: 'replac
       // Include the standard oid system
       system = systemOid;
     } else {
+      // Keep the oid system as is
       system = systemOid;
     }
 

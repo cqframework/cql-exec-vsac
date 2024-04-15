@@ -160,7 +160,7 @@ describe('SVS', () => {
           tmpCache,
           vsDB,
           true,
-          { parseCodeSystem: 'none' }
+          { svsCodeSystemType: 'oid' }
         ),
         svs.downloadValueSet(
           'testkey',
@@ -169,7 +169,7 @@ describe('SVS', () => {
           tmpCache,
           vsDB,
           true,
-          { parseCodeSystem: 'none' }
+          { svsCodeSystemType: 'oid' }
         )
       ]);
       // Should add the results to the VS DB
@@ -206,7 +206,7 @@ describe('SVS', () => {
           tmpCache,
           vsDB,
           true,
-          { parseCodeSystem: 'include' }
+          { svsCodeSystemType: 'both' }
         ),
         svs.downloadValueSet(
           'testkey',
@@ -215,7 +215,7 @@ describe('SVS', () => {
           tmpCache,
           vsDB,
           true,
-          { parseCodeSystem: 'include' }
+          { svsCodeSystemType: 'both' }
         )
       ]);
       // Should add the results to the VS DB

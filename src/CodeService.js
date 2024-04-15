@@ -78,7 +78,7 @@ class CodeService {
     valueSetList = [],
     umlsAPIKey = env['UMLS_API_KEY'],
     caching = true,
-    options = { parseCodeSystem: 'replace' }
+    options = { svsCodeSystemType: 'url' }
   ) {
     // First, filter out the value sets we already have
     const filteredVSList = valueSetList.filter(vs => {
@@ -153,7 +153,7 @@ class CodeService {
     checkIncluded = true,
     umlsAPIKey = env['UMLS_API_KEY'],
     caching = true,
-    options = { parseCodeSystem: 'replace' }
+    options = { svsCodeSystemType: 'url' }
   ) {
     const valueSets = extractSetOfValueSetsFromLibrary(library, checkIncluded);
     return this.ensureValueSetsWithAPIKey(Array.from(valueSets), umlsAPIKey, caching, options);
