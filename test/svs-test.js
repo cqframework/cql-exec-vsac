@@ -136,6 +136,52 @@ describe('SVS', () => {
       );
     });
 
+    it('should merge value sets into the value set database, using default url options when empty options is included', async () => {
+      nock('https://vsac.nlm.nih.gov')
+        .get('/vsac/svs/RetrieveValueSet')
+        .basicAuth({ user: 'apikey', pass: 'testkey' })
+        .query({
+          id: '2.16.840.1.113883.3.526.3.1032'
+        })
+        .replyWithFile(200, path.join(__dirname, 'fixtures', '2.16.840.1.113883.3.526.3.1032.xml'))
+        .get('/vsac/svs/RetrieveValueSet')
+        .basicAuth({ user: 'apikey', pass: 'testkey' })
+        .query({
+          id: '2.16.840.1.113883.3.600.2390'
+        })
+        .replyWithFile(200, path.join(__dirname, 'fixtures', '2.16.840.1.113883.3.600.2390.xml'));
+
+      const vsDB = {};
+      await Promise.all([
+        svs.downloadValueSet(
+          'testkey',
+          '2.16.840.1.113883.3.526.3.1032',
+          undefined,
+          tmpCache,
+          vsDB,
+          true,
+          {}
+        ),
+        svs.downloadValueSet(
+          'testkey',
+          '2.16.840.1.113883.3.600.2390',
+          undefined,
+          tmpCache,
+          vsDB,
+          true,
+          {}
+        )
+      ]);
+      // Should add the results to the VS DB
+      Object.keys(vsDB).should.have.length(2);
+      vsDB['2.16.840.1.113883.3.526.3.1032'].should.eql(
+        SYSTOLIC_VS_DB['2.16.840.1.113883.3.526.3.1032']
+      );
+      vsDB['2.16.840.1.113883.3.600.2390'].should.eql(
+        TOBACCO_VS_DB['2.16.840.1.113883.3.600.2390']
+      );
+    });
+
     it('should merge value sets into the value set database while maintaining original system', async () => {
       nock('https://vsac.nlm.nih.gov')
         .get('/vsac/svs/RetrieveValueSet')

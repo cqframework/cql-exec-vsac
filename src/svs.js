@@ -84,13 +84,9 @@ function parseVSACXML(xmlString, vsDB = {}, options = { svsCodeSystemType: 'url'
     const systemOid = `urn:oid:${system}`;
     const systemUri = getVSACCodeSystem(vsacCS, system);
 
-    // Replace oid system with the url system, if one exists
-    if (options.svsCodeSystemType === 'url') {
-      if (systemUri !== null) {
-        system = systemUri.uri;
-      } else {
-        system = systemOid;
-      }
+    if (options.svsCodeSystemType === 'oid') {
+      // Keep the oid system as is
+      system = systemOid;
     } else if (options.svsCodeSystemType === 'both') {
       // Optionally include both if they exist
       if (systemUri !== null) {
@@ -99,8 +95,12 @@ function parseVSACXML(xmlString, vsDB = {}, options = { svsCodeSystemType: 'url'
       // Include the standard oid system
       system = systemOid;
     } else {
-      // Keep the oid system as is
-      system = systemOid;
+      // Replace oid system with the url system, if one exists
+      if (systemUri !== null) {
+        system = systemUri.uri;
+      } else {
+        system = systemOid;
+      }
     }
 
     codeList.push({ code, system, version });
