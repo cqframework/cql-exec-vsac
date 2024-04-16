@@ -6,26 +6,34 @@ const debug = require('debug')('vsac'); // To turn on DEBUG: $ export DEBUG=vsac
 const { Code, ValueSet } = require('cql-execution');
 const vsacCS = require('./vsac-code-systems');
 
-async function downloadValueSet(apiKey, oid, version, output, vsDB = {}, caching = true) {
+async function downloadValueSet(
+  apiKey,
+  oid,
+  version,
+  output,
+  vsDB = {},
+  caching = true,
+  options = { svsCodeSystemType: 'url' }
+) {
   debug(`Getting ValueSet: ${oid}${version != null ? ` version ${version}` : ''}`);
   const params = new URLSearchParams({ id: oid });
   if (version != null) {
     params.append('version', version);
   }
-  const options = {
+  const requestOptions = {
     headers: {
       Authorization: `Basic ${Buffer.from(`apikey:${apiKey}`).toString('base64')}`
     }
   };
   const response = await fetch(
     `https://vsac.nlm.nih.gov/vsac/svs/RetrieveValueSet?${params}`,
-    options
+    requestOptions
   );
   if (!response.ok) {
     throw new Error(response.status);
   }
   const data = await response.text();
-  parseVSACXML(data, vsDB);
+  parseVSACXML(data, vsDB, options);
   if (caching) {
     const file = path.join(output, `${oid}.xml`);
     await fs.writeFile(file, data);
@@ -33,10 +41,21 @@ async function downloadValueSet(apiKey, oid, version, output, vsDB = {}, caching
   }
 }
 
+function getVSACCodeSystem(codeSystems, system) {
+  if (
+    typeof codeSystems[system] !== 'undefined' &&
+    typeof codeSystems[system].uri !== 'undefined'
+  ) {
+    return codeSystems[system];
+  }
+
+  return null;
+}
+
 // Take in a string containing a string of the XML response from a VSAC SVS
 // response and parse it into a vsDB object.  This code makes strong
 // assumptions about the structure of the message.  See code below.
-function parseVSACXML(xmlString, vsDB = {}) {
+function parseVSACXML(xmlString, vsDB = {}, options = { svsCodeSystemType: 'url' }) {
   if (typeof xmlString === 'undefined' || xmlString == null || xmlString.trim().length == 0) {
     return;
   }
@@ -59,16 +78,31 @@ function parseVSACXML(xmlString, vsDB = {}) {
   // Loop over the codes and build the JSON.
   const codeList = [];
   for (let concept in conceptList) {
-    let system;
-    const systemOID = conceptList[concept]['$']['codeSystem'];
-    if (typeof vsacCS[systemOID] !== 'undefined' && typeof vsacCS[systemOID].uri !== 'undefined') {
-      system = vsacCS[systemOID].uri;
-    } else {
-      system = `urn:oid:${systemOID}`;
-    }
-
+    let system = conceptList[concept]['$']['codeSystem'];
     const code = conceptList[concept]['$']['code'];
     const version = conceptList[concept]['$']['codeSystemVersion'];
+    const systemOid = `urn:oid:${system}`;
+    const systemUri = getVSACCodeSystem(vsacCS, system);
+
+    if (options.svsCodeSystemType === 'oid') {
+      // Keep the oid system as is
+      system = systemOid;
+    } else if (options.svsCodeSystemType === 'both') {
+      // Optionally include both if they exist
+      if (systemUri !== null) {
+        codeList.push({ code, system: systemUri.uri, version });
+      }
+      // Include the standard oid system
+      system = systemOid;
+    } else {
+      // Replace oid system with the url system, if one exists
+      if (systemUri !== null) {
+        system = systemUri.uri;
+      } else {
+        system = systemOid;
+      }
+    }
+
     codeList.push({ code, system, version });
   }
 
