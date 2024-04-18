@@ -1,6 +1,6 @@
 {
   "name": "cql-exec-vsac",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -19,20 +19,20 @@
   },
   "dependencies": {
     "debug": "^4.3.4",
-    "fs-extra": "^11.1.1",
+    "fs-extra": "^11.2.0",
     "node-fetch": "^2.7.0",
     "xml2js": "^0.6.2"
   },
   "devDependencies": {
-    "chai": "^4.3.10",
+    "chai": "^4.4.1",
     "chai-as-promised": "^7.1.1",
     "cql-execution": "^3.0.1",
-    "eslint": "^8.51.0",
-    "eslint-config-prettier": "^9.0.0",
-    "mocha": "^10.1.0",
-    "nock": "^13.3.4",
-    "prettier": "^3.0.3",
-    "sinon": "^16.1.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "mocha": "^10.4.0",
+    "nock": "^13.5.4",
+    "prettier": "^3.2.5",
+    "sinon": "^17.0.1",
     "temp": "^0.9.4"
   },
   "peerDependencies": {
